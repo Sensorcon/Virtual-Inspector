@@ -10,7 +10,7 @@
     tools:context=".MainActivity" >
 
     <ImageView
-        android:id="@+id/imageView1"
+        android:id="@+id/lcdScreen"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_alignParentTop="true"
@@ -19,24 +19,24 @@
         android:src="@drawable/lcd" />
 
     <ImageView
-        android:id="@+id/imageView2"
+        android:id="@+id/logoSensorcon"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_alignLeft="@+id/imageView1"
+        android:layout_alignLeft="@+id/lcdScreen"
         android:layout_alignParentTop="true"
         android:layout_marginTop="42dp"
         android:src="@drawable/sensorconlogo" />
 
     <ImageView
-        android:id="@+id/imageView3"
+        android:id="@+id/labelInspector"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_alignRight="@+id/imageView1"
-        android:layout_alignTop="@+id/imageView2"
+        android:layout_alignRight="@+id/lcdScreen"
+        android:layout_alignTop="@+id/logoSensorcon"
         android:src="@drawable/inspector_label" />
 
     <ImageView
-        android:id="@+id/imageView4"
+        android:id="@+id/labelCarbonMonoxide"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_alignParentBottom="true"
@@ -45,53 +45,70 @@
         android:src="@drawable/carbonmonoxide_label" />
 
     <ImageView
-        android:id="@+id/imageView5"
+        android:id="@+id/labelMute"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_alignLeft="@+id/imageView4"
-        android:layout_below="@+id/imageView1"
+        android:layout_alignLeft="@+id/labelCarbonMonoxide"
+        android:layout_below="@+id/lcdScreen"
         android:layout_marginTop="25dp"
         android:src="@drawable/mute_label" />
 
     <ImageView
-        android:id="@+id/imageView6"
+        android:id="@+id/labelMax"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_alignRight="@+id/imageView4"
-        android:layout_alignTop="@+id/imageView5"
+        android:layout_alignRight="@+id/labelCarbonMonoxide"
+        android:layout_alignTop="@+id/labelMute"
         android:src="@drawable/max_label" />
 
     <ImageView
-        android:id="@+id/imageView7"
+        android:id="@+id/ledTopLeft_off"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_alignLeft="@+id/imageView1"
-        android:layout_below="@+id/imageView2"
+        android:layout_alignLeft="@+id/lcdScreen"
+        android:layout_below="@+id/logoSensorcon"
         android:layout_marginTop="27dp"
         android:src="@drawable/led_off" />
 
     <ImageView
-        android:id="@+id/ImageView01"
+        android:id="@+id/ledTopRight_off"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_alignRight="@+id/imageView1"
-        android:layout_alignTop="@+id/imageView7"
+        android:layout_alignRight="@+id/lcdScreen"
+        android:layout_alignTop="@+id/ledTopLeft_off"
         android:src="@drawable/led_off" />
 
     <ImageView
-        android:id="@+id/ImageView02"
+        android:id="@+id/ledBottomLeft_off"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_alignBottom="@+id/imageView5"
-        android:layout_alignLeft="@+id/imageView1"
+        android:layout_alignBottom="@+id/labelMute"
+        android:layout_alignLeft="@+id/lcdScreen"
         android:src="@drawable/led_off" />
 
-    <ImageView
-        android:id="@+id/ImageView03"
+    <ImageButton
+        android:id="@+id/buttonRight_unpressed"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_alignBottom="@+id/imageView6"
-        android:layout_alignRight="@+id/imageView1"
+        android:layout_alignLeft="@+id/labelMax"
+        android:layout_alignTop="@+id/buttonLeft_unpressed"
+        android:src="@drawable/button_right" />
+
+    <ImageButton
+        android:id="@+id/buttonLeft_unpressed"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_above="@+id/labelCarbonMonoxide"
+        android:layout_alignRight="@+id/labelMute"
+        android:layout_marginBottom="39dp"
+        android:src="@drawable/button_left" />
+
+    <ImageView
+        android:id="@+id/ledBottomRight_off"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignBottom="@+id/labelMax"
+        android:layout_alignRight="@+id/lcdScreen"
         android:src="@drawable/led_off" />
 
 </RelativeLayout>
