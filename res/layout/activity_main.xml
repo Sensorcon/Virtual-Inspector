@@ -6,11 +6,92 @@
     android:paddingLeft="@dimen/activity_horizontal_margin"
     android:paddingRight="@dimen/activity_horizontal_margin"
     android:paddingTop="@dimen/activity_vertical_margin"
+    android:background="@color/black"
     tools:context=".MainActivity" >
 
-    <TextView
+    <ImageView
+        android:id="@+id/imageView1"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="@string/hello_world" />
+        android:layout_alignParentTop="true"
+        android:layout_centerHorizontal="true"
+        android:layout_marginTop="174dp"
+        android:src="@drawable/lcd" />
+
+    <ImageView
+        android:id="@+id/imageView2"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignLeft="@+id/imageView1"
+        android:layout_alignParentTop="true"
+        android:layout_marginTop="42dp"
+        android:src="@drawable/sensorconlogo" />
+
+    <ImageView
+        android:id="@+id/imageView3"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignRight="@+id/imageView1"
+        android:layout_alignTop="@+id/imageView2"
+        android:src="@drawable/inspector_label" />
+
+    <ImageView
+        android:id="@+id/imageView4"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentBottom="true"
+        android:layout_centerHorizontal="true"
+        android:layout_marginBottom="38dp"
+        android:src="@drawable/carbonmonoxide_label" />
+
+    <ImageView
+        android:id="@+id/imageView5"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignLeft="@+id/imageView4"
+        android:layout_below="@+id/imageView1"
+        android:layout_marginTop="25dp"
+        android:src="@drawable/mute_label" />
+
+    <ImageView
+        android:id="@+id/imageView6"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignRight="@+id/imageView4"
+        android:layout_alignTop="@+id/imageView5"
+        android:src="@drawable/max_label" />
+
+    <ImageView
+        android:id="@+id/imageView7"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignLeft="@+id/imageView1"
+        android:layout_below="@+id/imageView2"
+        android:layout_marginTop="27dp"
+        android:src="@drawable/led_off" />
+
+    <ImageView
+        android:id="@+id/ImageView01"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignRight="@+id/imageView1"
+        android:layout_alignTop="@+id/imageView7"
+        android:src="@drawable/led_off" />
+
+    <ImageView
+        android:id="@+id/ImageView02"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignBottom="@+id/imageView5"
+        android:layout_alignLeft="@+id/imageView1"
+        android:src="@drawable/led_off" />
+
+    <ImageView
+        android:id="@+id/ImageView03"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignBottom="@+id/imageView6"
+        android:layout_alignRight="@+id/imageView1"
+        android:src="@drawable/led_off" />
 
 </RelativeLayout>
