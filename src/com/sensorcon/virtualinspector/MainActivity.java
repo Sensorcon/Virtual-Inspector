@@ -6,19 +6,31 @@ import java.util.TimerTask;
 import android.os.Bundle;
 import android.os.Handler;
 import android.app.Activity;
+import android.graphics.Typeface;
 import android.view.Menu;
 import android.view.View;
 import android.widget.ImageView;
+import android.widget.TextView;
 
 public class MainActivity extends Activity {
 	
+	/*
+	 * LED sequence variables
+	 */
 	private int cycles;
 	private int count;
 	private boolean startUpLEDSequence;
-	
+	private boolean slowAlarmSequence;
+	private boolean fastAlarmSequence;
+	/*
+	 * Timer variables
+	 */
 	private Timer timer;
 	private Handler myHandler = new Handler();
-	
+	/*
+	 * Typeface variables
+	 */
+	Typeface lcdFont;
 	/*
 	 * Accessable view variables from GUI
 	 */
@@ -28,6 +40,8 @@ public class MainActivity extends Activity {
 	public ImageView ledBottomRight_on;
 	private ImageView logoSensorconGray;
 	private ImageView labelInspectorGray;
+	private TextView ppmValue;
+	private TextView labelPPM;
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
@@ -47,6 +61,15 @@ public class MainActivity extends Activity {
 		ledBottomRight_on.setVisibility(View.GONE);
 		logoSensorconGray.setVisibility(View.GONE);
 		labelInspectorGray.setVisibility(View.GONE);	
+		
+		lcdFont = Typeface.createFromAsset(this.getAssets(), "DS-DIGI.TTF");
+		ppmValue = (TextView)findViewById(R.id.ppmValue);
+		ppmValue.setTypeface(lcdFont);
+		ppmValue.setVisibility(View.GONE);
+		labelPPM = (TextView)findViewById(R.id.labelPPM);
+		labelPPM.setTypeface(lcdFont);
+		labelPPM.setVisibility(View.GONE);
+		
 
 		cycles = 0;
 		count = 0;
@@ -64,6 +87,11 @@ public class MainActivity extends Activity {
 		return true;
 	}
 	
+	/**
+	 * Enables a single LED based on the index passed
+	 * 
+	 * @param index		0 for top left, 1 for top right, 2 for bottom left, 3 for bottom right
+	 */
 	private void enableLED(int index) {
 		switch(index) {
 		case 0:
@@ -83,6 +111,11 @@ public class MainActivity extends Activity {
 		}		
 	}
 	
+	/**
+	 * Disables a single LED based on the passed index
+	 * 
+	 * @param index		0 for top left, 1 for top right, 2 for bottom left, 3 for bottom right
+	 */
 	private void disableLED(int index) {
 		switch(index) {
 		case 0:
@@ -102,11 +135,17 @@ public class MainActivity extends Activity {
 		}		
 	}
 	
+	/**
+	 * Starts the LED sequence at start up
+	 */
 	private void startUpLEDSequence() {
 		startUpLEDSequence = true;
 		myHandler.post(LEDRunnable);
 	}
 	
+	/**
+	 * Controls the timing thread for the LEDs
+	 */
 	final Runnable LEDRunnable = new Runnable() {
 		
 		@Override
@@ -161,6 +200,8 @@ public class MainActivity extends Activity {
 					disableLED(3);
 					logoSensorconGray.setVisibility(View.GONE);
 					labelInspectorGray.setVisibility(View.GONE);
+					ppmValue.setVisibility(View.VISIBLE);
+					labelPPM.setVisibility(View.VISIBLE);
 					cycles = 0;
 					count = 0;
 					startUpLEDSequence = false;

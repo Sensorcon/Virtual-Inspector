@@ -163,4 +163,26 @@
         android:layout_marginTop="40dp"
         android:src="@drawable/sensorconlogo_gray" />
 
+    <TextView
+        android:id="@+id/ppmValue"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignBottom="@+id/lcdScreen"
+        android:layout_alignRight="@+id/lcdScreen"
+        android:layout_centerHorizontal="true"
+        android:layout_marginBottom="40dp"
+        android:layout_marginRight="100dp"
+        android:text="0"
+        android:textSize="240px" />
+
+    <TextView
+        android:id="@+id/labelPPM"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignBottom="@+id/ppmValue"
+        android:layout_alignRight="@+id/lcdScreen"
+        android:layout_marginRight="10dp"
+        android:text="PPM"
+        android:textSize="75px" />
+
 </RelativeLayout>
