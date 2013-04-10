@@ -29,10 +29,16 @@ import android.widget.Toast;
 
 public class MainActivity extends Activity {
 	
+	int concentration;
+	int numMeasurements;
+	int[] values = new int[10];
+	int sum;
+	int average;
 	/*
 	 * Constants
 	 */
 	private final String TAG = "chris";
+	private final int MAX_MEASUREMENTS = 10;
 	/*
 	 * Runs the sensordrone functions
 	 */
@@ -157,6 +163,13 @@ public class MainActivity extends Activity {
 		highAlarmActivated = false;
 		poweredOn = false;
 
+		concentration = 0;
+		average = 0;
+		numMeasurements = 0;
+		sum = 0;
+		for(int i = 0; i < MAX_MEASUREMENTS; i++) {
+			values[i] = 0;
+		}
 		countdown = 4;
 		btCount = 0;
 		
@@ -176,9 +189,8 @@ public class MainActivity extends Activity {
 						}
 						else {
 							setMute();
+							bluetoothHoldMode();
 						}
-						
-						bluetoothHoldMode();
 					}
 					else {
 						bluetoothHoldMode();
@@ -351,6 +363,7 @@ public class MainActivity extends Activity {
 	public void normalMode() {
 		if(poweredOn) {
 			initNormalMode();
+			myHandler.post(displayConcentrationRunnable);
 		}
 		else {
 			// Display connection message
@@ -652,7 +665,7 @@ public class MainActivity extends Activity {
 				
 				Log.d(TAG, Integer.toString(btCount));
 				
-				if(btCount == 2) {
+				if(btCount == 3) {
 					btCount = 0;
 					btHoldActivated = false;
 					
@@ -666,6 +679,19 @@ public class MainActivity extends Activity {
 				else {
 					myHandler.postDelayed(this, 1000);
 				}
+			}
+		}
+	};
+	
+	public Runnable displayConcentrationRunnable = new Runnable() {
+
+		@Override
+		public void run() {
+			
+			if(inNormalMode && poweredOn) {
+				ppmValue.setText(Integer.toString(average));
+				
+				myHandler.postDelayed(this, 1000);
 			}
 		}
 	};
@@ -778,8 +804,24 @@ public class MainActivity extends Activity {
 
 				@Override
 				public void precisionGasMeasured(EventObject arg0) {
-					// TODO Auto-generated method stub
+					concentration = (int)myDrone.precisionGas_ppmCarbonMonoxide;
+					//ppmValue.setText(Integer.toString(concentration));
 					
+					values[numMeasurements] = concentration;
+					numMeasurements++;
+					
+					if(numMeasurements == MAX_MEASUREMENTS) {
+						numMeasurements = 0;
+					}
+					
+					sum = 0;
+					for(int i = 0; i < MAX_MEASUREMENTS; i++) {
+						sum += values[i];
+					}
+					
+					average = sum/MAX_MEASUREMENTS;
+					
+					streamer.streamHandler.postDelayed(streamer, 1);
 				}
 
 				@Override
@@ -883,7 +925,7 @@ public class MainActivity extends Activity {
 
 				@Override
 				public void precisionGasStatus(EventObject arg0) {
-					
+					streamer.run();
 
 				}
 
