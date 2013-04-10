@@ -90,9 +90,10 @@
         android:id="@+id/buttonRight_unpressed"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_alignLeft="@+id/labelMax"
-        android:layout_alignTop="@+id/buttonLeft_unpressed"
-        android:src="@drawable/button_right_selector"
+        android:layout_above="@+id/labelCarbonMonoxide"
+       android:layout_alignLeft="@+id/labelMax"
+        android:layout_marginBottom="39dp"
+        android:src="@drawable/button_right"
         android:background="@null" />
 
     <ImageButton
@@ -102,7 +103,7 @@
         android:layout_above="@+id/labelCarbonMonoxide"
         android:layout_alignRight="@+id/labelMute"
         android:layout_marginBottom="39dp"
-        android:src="@drawable/button_left_selector"
+        android:src="@drawable/button_left"
         android:background="@null" />
 
     <ImageView
@@ -181,8 +182,88 @@
         android:layout_height="wrap_content"
         android:layout_alignBottom="@+id/ppmValue"
         android:layout_alignRight="@+id/lcdScreen"
-        android:layout_marginRight="10dp"
+        android:layout_marginRight="20dp"
         android:text="PPM"
-        android:textSize="75px" />
+        android:textSize="40px" />
+
+    <TextView
+        android:id="@+id/countdownValue"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignBottom="@+id/lcdScreen"
+		android:layout_marginBottom="40dp"
+		android:layout_centerHorizontal="true"
+        android:text="0"
+        android:textSize="240px" />
+
+    <ImageButton
+        android:id="@+id/buttonLeft_pressed"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+       android:layout_above="@+id/labelCarbonMonoxide"
+        android:layout_alignRight="@+id/labelMute"
+        android:layout_marginBottom="39dp"
+        android:src="@drawable/button_left_pressed"
+        android:background="@null" />
+
+    <ImageButton
+        android:id="@+id/buttonRight_pressed"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_above="@+id/labelCarbonMonoxide"
+       android:layout_alignLeft="@+id/labelMax"
+        android:layout_marginBottom="39dp"
+        android:src="@drawable/button_right_pressed"
+        android:background="@null" />
+
+    <TextView
+        android:id="@+id/labelHold"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignTop="@+id/lcdScreen"
+        android:layout_centerHorizontal="true"
+        android:text="HOLD"
+        android:textSize="40px" />
+
+    <TextView
+        android:id="@+id/labelZero"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+       	android:layout_alignBottom="@+id/lcdScreen"
+		android:layout_marginBottom="40dp"
+        android:layout_alignLeft="@+id/lcdScreen"
+        android:layout_marginLeft="20dp"
+        android:text="ZERO"
+        android:textSize="40px" />
+
+    <TextView
+        android:id="@+id/labelCal"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignBottom="@+id/lcdScreen"
+		android:layout_marginBottom="40dp"
+		android:layout_centerHorizontal="true"
+        android:text="CAL"
+        android:textSize="240px" />
+
+    <ImageView
+        android:id="@+id/arrowLeft"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignBottom="@+id/lcdScreen"
+        android:layout_marginBottom="5dp"
+        android:layout_alignLeft="@+id/lcdScreen"
+        android:layout_marginLeft="95dp"
+        android:src="@drawable/arrow" />
+
+    <ImageView
+        android:id="@+id/arrowRight"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignBottom="@+id/lcdScreen"
+        android:layout_alignRight="@+id/lcdScreen"
+        android:layout_marginBottom="5dp"
+        android:layout_marginRight="95dp"
+        android:src="@drawable/arrow" />
 
 </RelativeLayout>
