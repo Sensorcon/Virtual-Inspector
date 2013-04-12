@@ -511,7 +511,7 @@ public class MainActivity extends Activity {
 	private void powerDown() {
 		poweredOn = false;
 		normalMode();
-		clearScreenAndFlags();
+		clearScreenAndFlags(false);
 	}
 	
 	/**
@@ -626,73 +626,41 @@ public class MainActivity extends Activity {
 	 * Sets views and flags for normal mode
 	 */
 	private void initNormalMode() {
+		clearScreenAndFlags(false);
+		
 		ppmValue.setVisibility(View.VISIBLE);
-		countdownValue.setVisibility(View.GONE);
 		labelPPM.setVisibility(View.VISIBLE);
-		labelZero.setVisibility(View.GONE);
-		labelHold.setVisibility(View.GONE);
-		labelCal.setVisibility(View.GONE);
-		arrowLeft.setVisibility(View.GONE);
-		arrowRight.setVisibility(View.GONE);
-		leftPressed = false;
-		rightPressed = false;
 		inNormalMode = true;
-		inCountdownMode = false;
-		inBaselineMode = false;
-		btHoldActivated = false;
-		lowAlarmActivated = false;
-		highAlarmActivated = false;
-		ledsActivated = false;
 	}
 	
 	/**
 	 * Sets views and flags for countdown mode
 	 */
 	private void initCountdownMode() {
-		ppmValue.setVisibility(View.GONE);
+		clearScreenAndFlags(true);
+		
 		countdownValue.setVisibility(View.VISIBLE);
-		labelPPM.setVisibility(View.GONE);
-		labelZero.setVisibility(View.GONE);
 		labelHold.setVisibility(View.VISIBLE);
-		labelCal.setVisibility(View.GONE);
-		arrowLeft.setVisibility(View.GONE);
-		arrowRight.setVisibility(View.GONE);
-		leftPressed = false;
-		rightPressed = false;
 		inCountdownMode = true;
-		btHoldActivated = false;
-		lowAlarmActivated = false;
-		highAlarmActivated = false;
-		ledsActivated = false;
 	}
 	
 	/**
 	 * Sets views and flags for baseline mode
 	 */
 	private void initBaselineMode() {
-		ppmValue.setVisibility(View.GONE);
-		countdownValue.setVisibility(View.GONE);
-		labelPPM.setVisibility(View.GONE);
+		clearScreenAndFlags(false);
+		
 		labelZero.setVisibility(View.VISIBLE);
-		labelHold.setVisibility(View.GONE);
 		labelCal.setVisibility(View.VISIBLE);
-		arrowLeft.setVisibility(View.GONE);
-		arrowRight.setVisibility(View.GONE);
-		leftPressed = false;
-		rightPressed = false;
-		inNormalMode = false;
-		inCountdownMode = false;
 		inBaselineMode = true;
-		btHoldActivated = false;
-		lowAlarmActivated = false;
-		highAlarmActivated = false;
-		ledsActivated = false;
 	}
 	
 	/**
 	 * Clears all views and flags
+	 * 
+	 * @param rememberLastMode	If this is set to true, it will not clear the normal and baseline mode flags
 	 */
-	private void clearScreenAndFlags() {
+	private void clearScreenAndFlags(boolean rememberLastMode) {
 		ppmValue.setVisibility(View.GONE);
 		countdownValue.setVisibility(View.GONE);
 		labelPPM.setVisibility(View.GONE);
@@ -703,13 +671,16 @@ public class MainActivity extends Activity {
 		arrowRight.setVisibility(View.GONE);
 		leftPressed = false;
 		rightPressed = false;
-		inNormalMode = true;
+		leftArrowOn = false;
+		rightArrowOn = false;
+		if(rememberLastMode == false) { inNormalMode = false; }
 		inCountdownMode = false;
-		inBaselineMode = false;
+		if(rememberLastMode == false) { inBaselineMode = false; }
 		btHoldActivated = false;
 		lowAlarmActivated = false;
 		highAlarmActivated = false;
 		ledsActivated = false;
+		showMax = false;
 	}
 	
 	/*************************************************************************************************
@@ -908,6 +879,9 @@ public class MainActivity extends Activity {
 				else {
 					myHandler.postDelayed(this, 1000);
 				}
+			}
+			else {
+				btCount = 0;
 			}
 		}
 	};
