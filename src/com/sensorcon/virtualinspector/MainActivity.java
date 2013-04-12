@@ -1,17 +1,17 @@
 package com.sensorcon.virtualinspector;
 
 import java.util.EventObject;
-import java.util.Timer;
-import java.util.TimerTask;
 
 import com.sensorcon.sdhelper.ConnectionBlinker;
-import com.sensorcon.sdhelper.OnOffRunnable;
 import com.sensorcon.sdhelper.SDHelper;
 import com.sensorcon.sdhelper.SDStreamer;
 import com.sensorcon.sensordrone.Drone;
 import com.sensorcon.sensordrone.Drone.DroneEventListener;
 import com.sensorcon.sensordrone.Drone.DroneStatusListener;
 
+import android.media.AudioManager;
+import android.media.SoundPool;
+import android.media.SoundPool.OnLoadCompleteListener;
 import android.os.Bundle;
 import android.os.Handler;
 import android.app.Activity;
@@ -27,23 +27,49 @@ import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 
+/**
+ * Main class for the Sensorcon Inspector. This app emulates an actual carbon monoxide detector sold
+ * by Sensorcon, Inc.
+ * 
+ * Build using SDAndroidLib 1.1.1
+ * 
+ * @author Sensorcon, Inc.
+ * @version 1.0.0
+ */
 public class MainActivity extends Activity {
 	
-	int concentration;
-	int numMeasurements;
-	int[] values = new int[10];
-	int sum;
-	int average;
 	/*
 	 * Constants
 	 */
 	private final String TAG = "chris";
 	private final int MAX_MEASUREMENTS = 10;
+	private final int LOW_ALARM_THRESHOLD = 35;
+	private final int HIGH_ALARM_THRESHOLD = 200;
+	private final int LOW_ALARM_TIMING = 1000;
+	private final int HIGH_ALARM_TIMING = 250;
+	/*
+	 * Measurement variables
+	 */
+	public int concentration;
+	public int numMeasurements;
+	public int[] values = new int[10];
+	public int sum;
+	public int average;
+	public int max;
+	/*
+	 * Alarm variables
+	 */
+	private int ledTiming;
+	private SoundPool alarmSound;
+	private int soundId;
+	private boolean loaded;
+	private AudioManager am;
 	/*
 	 * Runs the sensordrone functions
 	 */
 	protected Drone myDrone;
 	public Storage box;
+	private Handler myHandler = new Handler();
 	/*
 	 * Contains functions to simplify connectivity
 	 */
@@ -52,16 +78,8 @@ public class MainActivity extends Activity {
 	 * LED sequence variables
 	 */
 	private int cycles;
-	public int totalCycles;
 	private int count;
-	private int btCount;
 	private boolean startUpLEDSequence;
-	private boolean slowAlarmSequence;
-	private boolean fastAlarmSequence;
-	/*
-	 * Handlers
-	 */
-	private Handler myHandler = new Handler();
 	/*
 	 * Typeface variables
 	 */
@@ -69,18 +87,21 @@ public class MainActivity extends Activity {
 	/*
 	 * Program flow flags
 	 */
-	boolean leftPressed;
-	boolean rightPressed;
-	boolean inNormalMode;
-	boolean inCountdownMode;
-	boolean inBaselineMode;
-	boolean btHoldActivated;
-	boolean lowAlarmActivated;
-	boolean highAlarmActivated;
-	boolean leftArrowOn;
-	boolean rightArrowOn;
-	boolean poweredOn;
-	int countdown;
+	public boolean leftPressed;
+	public boolean rightPressed;
+	public boolean inNormalMode;
+	public boolean inCountdownMode;
+	public boolean inBaselineMode;
+	public boolean lowAlarmActivated;
+	public boolean highAlarmActivated;
+	public boolean ledsActivated;
+	public boolean leftArrowOn;
+	public boolean rightArrowOn;
+	public boolean poweredOn;
+	public boolean btHoldActivated;
+	public boolean showMax;
+	public int countdown;
+	private int btCount;
 	/*
 	 * Accessable view variables from GUI
 	 */
@@ -153,6 +174,18 @@ public class MainActivity extends Activity {
 		labelCal.setVisibility(View.GONE);
 		countdownValue.setVisibility(View.GONE);
 		
+		// Initialize alarm
+		alarmSound = new SoundPool(10, AudioManager.STREAM_ALARM, 0);
+		alarmSound.setOnLoadCompleteListener(new OnLoadCompleteListener() {
+			@Override
+			public void onLoadComplete(SoundPool soundPool, int sampleId, int status) {
+				loaded = true;
+			}
+		});
+		soundId = alarmSound.load(this, R.raw.beep, 1);
+		am = (AudioManager)getSystemService(Context.AUDIO_SERVICE);
+		
+		// Initialize program flow variables
 		leftPressed = false;
 		rightPressed = false;
 		inNormalMode = false;
@@ -161,8 +194,11 @@ public class MainActivity extends Activity {
 		btHoldActivated = false;
 		lowAlarmActivated = false;
 		highAlarmActivated = false;
+		ledsActivated = false;
 		poweredOn = false;
+		showMax = false;
 
+		// Initialize equation variables
 		concentration = 0;
 		average = 0;
 		numMeasurements = 0;
@@ -170,45 +206,67 @@ public class MainActivity extends Activity {
 		for(int i = 0; i < MAX_MEASUREMENTS; i++) {
 			values[i] = 0;
 		}
+		max = 0;
+		
+		// Initialize timing variables
 		countdown = 4;
 		btCount = 0;
+		ledTiming = 1000;
+		cycles = 0;
+		count = 0;
 		
+		/*
+		 * Controls the program flow for when the left button is pressed/released
+		 */
 		leftButton.setOnTouchListener(new OnTouchListener() {
 			@Override
 			public boolean onTouch(View v, MotionEvent event) {
+				/*
+				 * If button is pressed down
+				 */
 				if(event.getAction() == android.view.MotionEvent.ACTION_DOWN) {
 					leftPressed = true;
 					leftButton.setVisibility(View.GONE);
 					leftButtonPressed.setVisibility(View.VISIBLE);
 					
-					// Only if other modes are enabled
+					// Do only if connected to drone
 					if(poweredOn) {
-						// Check for both buttons pressed
+						// If both buttons are pressed, go to countdown mode
 						if(rightPressed == true) {
 							countdownMode();
 						}
+						// Otherwise, toggle mute button and start bluetooth count
 						else {
-							setMute();
+							toggleMute();
 							bluetoothHoldMode();
 						}
 					}
 					else {
+						// If device is disconnected, only do bluetooth count
 						bluetoothHoldMode();
 					}
 					Log.d(TAG, "Left button pressed\n");
 				}
+				/*
+				 * If button is released
+				 */
 				else if(event.getAction() == android.view.MotionEvent.ACTION_UP) {
 					leftPressed = false;
 					leftButton.setVisibility(View.VISIBLE);
 					leftButtonPressed.setVisibility(View.GONE);
+					
+					// Disable the bluetooth 3 second count
 					btCount = 0;
 					btHoldActivated = false;
 					
-					// Only if other modes are enabled
+					// Do only if connected to drone
 					if(poweredOn) {
+						// If in middle of countdown mode, go back to previous mode
 						if(inCountdownMode == true) {
+							// Reset countdown
 							countdown = 4;
 							
+							// Go back to previous mode
 							if(inBaselineMode) {
 								baselineMode();
 							}
@@ -223,36 +281,49 @@ public class MainActivity extends Activity {
 			}
 		});
 		
+		/*
+		 * Controls the program flow for when the right button is pressed/released
+		 */
 		rightButton.setOnTouchListener(new OnTouchListener() {
 			@Override
 			public boolean onTouch(View v, MotionEvent event) {
+				/*
+				 * If button is pressed down
+				 */
 				if(event.getAction() == android.view.MotionEvent.ACTION_DOWN) {
 					rightPressed = true;
 					rightButton.setVisibility(View.GONE);
 					rightButtonPressed.setVisibility(View.VISIBLE);
 					
-					// Only if other modes are enabled
+					// Do only if connected to drone
 					if(poweredOn) {
-						// Check for both buttons pressed
+						// If both buttons are pressed, go to countdown mode
 						if(leftPressed == true) {
 							countdownMode();
 						}
+						// Otherwise, toggle max
 						else {
-							setMax();
+							toggleMax();
 						}
 					}
 					Log.d(TAG, "Right button pressed\n");
 				}
+				/*
+				 * If button is released
+				 */
 				else if(event.getAction() == android.view.MotionEvent.ACTION_UP) {
 					rightPressed = false;
 					rightButton.setVisibility(View.VISIBLE);
 					rightButtonPressed.setVisibility(View.GONE);
 					
-					// Only if other modes are enabled
+					// Do only if connected to drone
 					if(poweredOn) {
+						// If in middle of countdown mode, go back to previous mode
 						if(inCountdownMode == true) {
+							// Reset countdown
 							countdown = 4;
 							
+							// Go back to previous mode
 							if(inBaselineMode) {
 								baselineMode();
 							}
@@ -260,25 +331,44 @@ public class MainActivity extends Activity {
 								normalMode();
 							}
 						}
-					}
-					
+					}			
 					Log.d(TAG, "Right button not pressed\n");
 				}
 				return true;
 			}
 		});
-
-		cycles = 0;
-		count = 0;
-		totalCycles = 6;
-		startUpLEDSequence = true;
-		myHandler.post(LEDRunnable);
 		
+		// Initialize drone variables
 		myDrone = new Drone();
 		box = new Storage(this);
 		myHelper = new SDHelper();
+		
+		// LED startup sequence
+		startupLEDSequence();
 	}
 
+	@Override
+	public void onDestroy() {
+		super.onDestroy();
+
+		if (isFinishing()) {
+			// Try and nicely shut down
+			doOnDisconnect();
+			// A brief delay
+			try {
+				Thread.sleep(500);
+			} catch (InterruptedException e) {
+				e.printStackTrace();
+			}
+			// Unregister the listener
+			myDrone.unregisterDroneEventListener(box.droneEventListener);
+			myDrone.unregisterDroneStatusListener(box.droneStatusListener);
+
+		} else { 
+			//It's an orientation change.
+		}
+	}
+	
 	@Override
 	public boolean onCreateOptionsMenu(Menu menu) {
 		// Inflate the menu; this adds items to the action bar if it is present.
@@ -287,23 +377,43 @@ public class MainActivity extends Activity {
 	}
 	
 	/*
-	 * 
-	 * 
-	 * Bluetooth functions
-	 * 
-	 * 
+	 * We use this so we can restore our data. Note that this has been deprecated as of 
+	 * Android API 13. The official Android Developer's recommendation is 
+	 * if you are targeting HONEYCOMB or later, consider instead using a 
+	 * Fragment with Fragment.setRetainInstance(boolean)
+	 * (Also available via the android-support libraries for older versions)
+	 */
+	@Override
+	public Storage onRetainNonConfigurationInstance() {
+		
+		// Make a new Storage object from our old data
+		Storage bin = box;
+		// Return our old data
+		return bin;
+	}
+	
+	/*************************************************************************************************
+	 *************************************************************************************************
+	 * HELPFUL FUNCTIONS
+	 *************************************************************************************************
+	 *************************************************************************************************/
+	
+	/**
+	 * Scans for nearby sensordrones and brings up list
 	 */
 	public void scan() {
 		myHelper.scanToConnect(myDrone, MainActivity.this , this, false);
 	}
 	
+	/**
+	 * Actions to do when drone is disconnected
+	 */
 	public void doOnDisconnect() {
 		// Shut off any sensors that are on
 		this.runOnUiThread(new Runnable() {
 
 			@Override
 			public void run() {
-
 				// Turn off myBlinker
 				box.myBlinker.disable();
 				
@@ -312,7 +422,6 @@ public class MainActivity extends Activity {
 					myDrone.setLEDs(0, 0, 0);
 				}
 				
-
 				// Only try and disconnect if already connected
 				if (myDrone.isConnected) {
 					myDrone.disconnect();
@@ -320,12 +429,39 @@ public class MainActivity extends Activity {
 			}
 		});
 	}
+		
+	/**
+	 * A function to display Toast Messages.
+	 * 
+	 * By having it run on the UI thread, we will be sure that the message
+	 * is displays no matter what thread tries to use it.
+	 * 
+	 * @param msg	Message to be displayed
+	 */
+	public void quickMessage(final String msg) {
+		this.runOnUiThread(new Runnable() {
+
+			@Override
+			public void run() {
+				Toast.makeText(getApplicationContext(), msg, Toast.LENGTH_SHORT).show();
+			}
+		});
+	}
 	
+	/*************************************************************************************************
+	 *************************************************************************************************
+	 * GUI INTERACTION FUNCTIONS
+	 *************************************************************************************************
+	 *************************************************************************************************/
 	
-	public void setMute() {
+	/**
+	 * Toggles the mute arrow and functionality
+	 */
+	public void toggleMute() {
 		if(leftArrowOn == false) {
 			arrowLeft.setVisibility(View.VISIBLE);
 			leftArrowOn = true;
+			
 		}
 		else {
 			arrowLeft.setVisibility(View.GONE);
@@ -333,66 +469,49 @@ public class MainActivity extends Activity {
 		}
 	}
 	
-	public void setMax() {
+	/**
+	 * Toggles the max arrow and functionality
+	 */
+	public void toggleMax() {
 		if(rightArrowOn == false) {
 			arrowRight.setVisibility(View.VISIBLE);
 			rightArrowOn = true;
+			showMax = true;
 		}
 		else {
 			arrowRight.setVisibility(View.GONE);
 			rightArrowOn = false;
+			showMax = false;
+			max = 0;
 		}
 	}
-	
-	/*
-	 * 
-	 * 
-	 * These are the functions that define the different modes in the state machine
-	 * 
-	 * 
-	 */
 	
 	/**
-	 * Starts the LED sequence at start up
+	 * Performs a single beep
+	 * 
+	 * @return	True if successful
 	 */
-	private void startUpLEDSequence() {
-		startUpLEDSequence = true;
-		myHandler.post(LEDRunnable);
-	}
-	
-	public void normalMode() {
-		if(poweredOn) {
-			initNormalMode();
-			myHandler.post(displayConcentrationRunnable);
+	public boolean beep() {
+		float volume = am.getStreamVolume(AudioManager.STREAM_MUSIC);
+		float max = am.getStreamMaxVolume(AudioManager.STREAM_MUSIC);
+		volume = volume/max;
+		
+		if(loaded) {
+			alarmSound.play(soundId, volume, volume, 1, 0, 1f);
+			return true;
 		}
 		else {
-			// Display connection message
-			poweredOn = false;
-			quickMessage("Not connected. Hold left button to scan for Sensordrone.");
+			return false;
 		}
 	}
 	
-	public void countdownMode() {		
-		initCountdownMode();
-		myHandler.post(countdownRunnable);
-	}
-	
-	public void baselineMode() {
-		initBaselineMode();
-		myHandler.post(arrowRunnable);
-	}
-	
-	public void bluetoothHoldMode() {	
-		btHoldActivated = true;
-		myHandler.post(btCountRunnable);
-	}
-	
-	public void lowAlarmMode() {
-		
-	}
-	
-	public void highAlarmMode() {
-		
+	/**
+	 * Sets all necessary parameters when device is "powered down"
+	 */
+	private void powerDown() {
+		poweredOn = false;
+		normalMode();
+		clearScreenAndFlags();
 	}
 	
 	/**
@@ -443,17 +562,69 @@ public class MainActivity extends Activity {
 		}		
 	}
 	
-	public void quickMessage(final String msg) {
-		this.runOnUiThread(new Runnable() {
-
-			@Override
-			public void run() {
-				Toast.makeText(getApplicationContext(), msg, Toast.LENGTH_SHORT).show();
-			}
-		});
-
+	/*************************************************************************************************
+	 *************************************************************************************************
+	 * FUNCTIONS THAT DEFINE STATE MACHINE
+	 *************************************************************************************************
+	 *************************************************************************************************/
+	
+	/**
+	 * Starts the LED sequence at start up
+	 */
+	private void startupLEDSequence() {
+		ledsActivated = true;
+		startUpLEDSequence = true;
+		myHandler.post(LEDRunnable);
 	}
 	
+	/**
+	 * Sends program to normal mode
+	 */
+	public void normalMode() {
+		if(poweredOn) {
+			initNormalMode();
+			myHandler.post(displayConcentrationRunnable);
+		}
+		else {
+			// Display connection message
+			poweredOn = false;
+			quickMessage("Not connected. Hold left button to scan for Sensordrone.");
+		}
+	}
+	
+	/**
+	 * Sends program to countdown mode
+	 */
+	public void countdownMode() {		
+		initCountdownMode();
+		myHandler.post(countdownRunnable);
+	}
+	
+	/**
+	 * Sends program to baseline mode
+	 */
+	public void baselineMode() {
+		initBaselineMode();
+		myHandler.post(arrowRunnable);
+	}
+	
+	/**
+	 * Activates bluetooth count to connect/disconnect
+	 */
+	public void bluetoothHoldMode() {	
+		btHoldActivated = true;
+		myHandler.post(btCountRunnable);
+	}
+	
+	/*************************************************************************************************
+	 *************************************************************************************************
+	 * FUNCTIONS THAT INITIALIZE THE DIFFERENT MODES
+	 *************************************************************************************************
+	 *************************************************************************************************/
+	
+	/**
+	 * Sets views and flags for normal mode
+	 */
 	private void initNormalMode() {
 		ppmValue.setVisibility(View.VISIBLE);
 		countdownValue.setVisibility(View.GONE);
@@ -471,8 +642,12 @@ public class MainActivity extends Activity {
 		btHoldActivated = false;
 		lowAlarmActivated = false;
 		highAlarmActivated = false;
+		ledsActivated = false;
 	}
 	
+	/**
+	 * Sets views and flags for countdown mode
+	 */
 	private void initCountdownMode() {
 		ppmValue.setVisibility(View.GONE);
 		countdownValue.setVisibility(View.VISIBLE);
@@ -484,14 +659,16 @@ public class MainActivity extends Activity {
 		arrowRight.setVisibility(View.GONE);
 		leftPressed = false;
 		rightPressed = false;
-		//inNormalMode = false;
 		inCountdownMode = true;
-		//inBaselineMode = false;
 		btHoldActivated = false;
 		lowAlarmActivated = false;
 		highAlarmActivated = false;
+		ledsActivated = false;
 	}
 	
+	/**
+	 * Sets views and flags for baseline mode
+	 */
 	private void initBaselineMode() {
 		ppmValue.setVisibility(View.GONE);
 		countdownValue.setVisibility(View.GONE);
@@ -509,9 +686,13 @@ public class MainActivity extends Activity {
 		btHoldActivated = false;
 		lowAlarmActivated = false;
 		highAlarmActivated = false;
+		ledsActivated = false;
 	}
 	
-	private void clearScreen() {
+	/**
+	 * Clears all views and flags
+	 */
+	private void clearScreenAndFlags() {
 		ppmValue.setVisibility(View.GONE);
 		countdownValue.setVisibility(View.GONE);
 		labelPPM.setVisibility(View.GONE);
@@ -528,81 +709,123 @@ public class MainActivity extends Activity {
 		btHoldActivated = false;
 		lowAlarmActivated = false;
 		highAlarmActivated = false;
+		ledsActivated = false;
 	}
-	/**
+	
+	/*************************************************************************************************
+	 *************************************************************************************************
+	 * RUNNABLES THAT UPDATE THE GUI
+	 *************************************************************************************************
+	 *************************************************************************************************/
+	
+	/*
 	 * Controls the timing thread for the LEDs
 	 */
 	final Runnable LEDRunnable = new Runnable() {
 		
 		@Override
 		public void run() {
-			switch(count) {
-			case 0:
-				enableLED(0);
-				disableLED(1);
-				disableLED(2);
-				disableLED(3);
-				break;
-			case 1:
-				disableLED(0);
-				enableLED(1);
-				disableLED(2);
-				disableLED(3);
-				break;
-			case 2:
-				disableLED(0);
-				disableLED(1);
-				disableLED(2);
-				enableLED(3);
-				break;
-			case 3:
-				disableLED(0);
-				disableLED(1);
-				enableLED(2);
-				disableLED(3);
-				break;
-			}
-			
-			count++;
-			
-			if(count > 3) {
-				count = 0;
-				cycles ++;
-			}
-			
-			if(startUpLEDSequence) {
-				switch(cycles) {
+			Log.d(TAG, "In led" );
+			if(ledsActivated) {
+				switch(count) {
+				case 0:
+					enableLED(0);
+					disableLED(1);
+					disableLED(2);
+					disableLED(3);
+					break;
+				case 1:
+					disableLED(0);
+					enableLED(1);
+					disableLED(2);
+					disableLED(3);
+					break;
 				case 2:
-					logoSensorconGray.setVisibility(View.VISIBLE);
+					disableLED(0);
+					disableLED(1);
+					disableLED(2);
+					enableLED(3);
+					break;
+				case 3:
+					disableLED(0);
+					disableLED(1);
+					enableLED(2);
+					disableLED(3);
 					break;
 				case 4:
-					labelInspectorGray.setVisibility(View.VISIBLE);
-					break;
-				case 6:
-					logoSensorconGray.setVisibility(View.GONE);
-					labelInspectorGray.setVisibility(View.GONE);
-					startUpLEDSequence = false;
-					normalMode();
-					break;
-				default:
+					disableLED(0);
+					disableLED(1);
+					disableLED(2);
+					disableLED(3);
 					break;
 				}
-			}
-			
-			if(cycles < totalCycles) {
-				myHandler.postDelayed(this, 125);
+				
+				count++;
+				
+				/*
+				 * If all four leds flashed, do a quick delay before they flash again
+				 */
+				if(count > 4) {
+					count = 0;
+					cycles++;
+					
+					if(lowAlarmActivated) {
+						ledTiming = LOW_ALARM_TIMING;
+					}
+					else if(highAlarmActivated) {
+						ledTiming = HIGH_ALARM_TIMING;
+					}
+					else if(startUpLEDSequence) {
+						ledTiming = 125;
+					}
+					
+					myHandler.postDelayed(this, ledTiming);
+					
+					if(leftArrowOn == false) {
+						if(lowAlarmActivated || highAlarmActivated) {
+							beep();
+						}
+					}
+				}
+				else {
+					myHandler.postDelayed(this, 125);
+				}
+				
+				/*
+				 * If program is just started, do a special LED sequence
+				 */
+				if(startUpLEDSequence) {
+					switch(cycles) {
+					case 2:
+						logoSensorconGray.setVisibility(View.VISIBLE);
+						break;
+					case 4:
+						labelInspectorGray.setVisibility(View.VISIBLE);
+						break;
+					case 6:
+						logoSensorconGray.setVisibility(View.GONE);
+						labelInspectorGray.setVisibility(View.GONE);
+						startUpLEDSequence = false;
+						ledsActivated = false;
+						normalMode();
+						break;
+					default:
+						break;
+					}
+				}
 			}
 			else {
 				disableLED(0);
 				disableLED(1);
 				disableLED(2);
 				disableLED(3);
-				cycles = 0;
-				count = 0;
 			}
 		}
 	};
 
+	/*
+	 * Controls timing thread for countdown
+	 */
 	public Runnable countdownRunnable = new Runnable() {
 
 		@Override
@@ -634,6 +857,9 @@ public class MainActivity extends Activity {
 		}
 	};
 	
+	/*
+	 * Controls timing thread for baseline blinking arrow
+	 */
 	public Runnable arrowRunnable = new Runnable() {
 
 		@Override
@@ -655,6 +881,9 @@ public class MainActivity extends Activity {
 		}		
 	};
 	
+	/*
+	 * Controls timing thread for bluetooth count
+	 */
 	public Runnable btCountRunnable = new Runnable() {
 
 		@Override
@@ -683,24 +912,52 @@ public class MainActivity extends Activity {
 		}
 	};
 	
+	/*
+	 * Controls timing thread for displaying the concentration on lcd
+	 */
 	public Runnable displayConcentrationRunnable = new Runnable() {
 
 		@Override
 		public void run() {
 			
 			if(inNormalMode && poweredOn) {
-				ppmValue.setText(Integer.toString(average));
+				// Check for new max
+				if(average > max) {
+					max = average;
+				}
 				
+				if(showMax == true) {
+					ppmValue.setText(Integer.toString(max));
+				}
+				else {
+					ppmValue.setText(Integer.toString(average));
+				}
+					
 				myHandler.postDelayed(this, 1000);
 			}
 		}
 	};
 	
+	/*
+	 * Because Android will destroy and re-create things on events like orientation changes,
+	 * we will need a way to store our objects and return them in such a case. 
+	 * 
+	 * A simple and straightforward way to do this is to create a class which has all of the objects
+	 * and values we want don't want to get lost. When our orientation changes, it will reload our
+	 * class, and everything will behave as normal! See onRetainNonConfigurationInstance in the code
+	 * below for more information.
+	 * 
+	 * A lot of the GUI set up will be here, and initialized via the Constructor
+	 */
 	public final class Storage {
 		
+		// A ConnectionBLinker from the SDHelper Library
 		public ConnectionBlinker myBlinker;
+		
+		// Holds the sensor of interest - the CO precision sensor
 		public int sensor;
 		
+		// Our Listeners
 		public DroneEventListener droneEventListener;
 		public DroneStatusListener droneStatusListener;
 		public String MAC = "";
@@ -710,15 +967,25 @@ public class MainActivity extends Activity {
 		public TextView tvConnectionStatus;
 		public TextView tvConnectInfo;
 		
+		// Streams data from sensor
 		public SDStreamer streamer;
 		
 		public Storage(Context context) {
 			
+			// Initialize sensor
 			sensor = myDrone.QS_TYPE_PRECISION_GAS;
+			
+			// This will Blink our Drone, once a second, Blue
 			myBlinker = new ConnectionBlinker(myDrone, 1000, 0, 0, 255);
 			
 			streamer = new SDStreamer(myDrone, sensor);
 			
+			/*
+			 * Let's set up our Drone Event Listener.
+			 * 
+			 * See adcMeasured for the general flow for when a sensor is measured.
+			 * 
+			 */
 			droneEventListener = new DroneEventListener() {
 				
 				@Override
@@ -739,24 +1006,7 @@ public class MainActivity extends Activity {
 					myBlinker.run();
 				}
 
-				@Override
-				public void adcMeasured(EventObject arg0) {
-					// TODO Auto-generated method stub
-					
-				}
-
-				@Override
-				public void altitudeMeasured(EventObject arg0) {
-					// TODO Auto-generated method stub
-					
-				}
-
-				@Override
-				public void capacitanceMeasured(EventObject arg0) {
-					// TODO Auto-generated method stub
-					
-				}
-
+				
 				@Override
 				public void connectionLostEvent(EventObject arg0) {
 					// Turn off the blinker
@@ -764,48 +1014,14 @@ public class MainActivity extends Activity {
 				}
 
 				@Override
-				public void customEvent(EventObject arg0) {
-					// TODO Auto-generated method stub
-					
-				}
-
-				@Override
 				public void disconnectEvent(EventObject arg0) {
-					
-					poweredOn = false;
-					clearScreen();
-					normalMode();
-					
-				}
-
-				@Override
-				public void humidityMeasured(EventObject arg0) {
-					// TODO Auto-generated method stub
-					
-				}
-
-				@Override
-				public void i2cRead(EventObject arg0) {
-					// TODO Auto-generated method stub
-					
-				}
-
-				@Override
-				public void irTemperatureMeasured(EventObject arg0) {
-					// TODO Auto-generated method stub
-					
-				}
-
-				@Override
-				public void oxidizingGasMeasured(EventObject arg0) {
-					// TODO Auto-generated method stub
-					
+					// If drone is disconnected, "power down" the inspector
+					powerDown();
 				}
 
 				@Override
 				public void precisionGasMeasured(EventObject arg0) {
 					concentration = (int)myDrone.precisionGas_ppmCarbonMonoxide;
-					//ppmValue.setText(Integer.toString(concentration));
 					
 					values[numMeasurements] = concentration;
 					numMeasurements++;
@@ -821,142 +1037,112 @@ public class MainActivity extends Activity {
 					
 					average = sum/MAX_MEASUREMENTS;
 					
+					if(average >= LOW_ALARM_THRESHOLD) {
+						if(lowAlarmActivated == false) {
+							lowAlarmActivated = true;
+							ledsActivated = true;
+							myHandler.post(LEDRunnable);
+						}
+					}
+					else if(average >= HIGH_ALARM_THRESHOLD) {
+						if(highAlarmActivated == false) {
+							highAlarmActivated = true;
+							ledsActivated = true;
+							myHandler.post(LEDRunnable);
+						}
+					}
+					else {
+						ledsActivated = false;
+						lowAlarmActivated = false;
+						highAlarmActivated = false;
+					}
+					
 					streamer.streamHandler.postDelayed(streamer, 1);
 				}
 
+				/*
+				 * Unused events
+				 */
 				@Override
-				public void pressureMeasured(EventObject arg0) {
-					// TODO Auto-generated method stub
-					
-				}
-
+				public void customEvent(EventObject arg0) {}
 				@Override
-				public void reducingGasMeasured(EventObject arg0) {
-					// TODO Auto-generated method stub
-					
-				}
-
+				public void adcMeasured(EventObject arg0) {}
 				@Override
-				public void rgbcMeasured(EventObject arg0) {
-			
-				}
-
+				public void altitudeMeasured(EventObject arg0) {}
 				@Override
-				public void temperatureMeasured(EventObject arg0) {
-					// TODO Auto-generated method stub
-					
-				}
-
+				public void capacitanceMeasured(EventObject arg0) {}
 				@Override
-				public void uartRead(EventObject arg0) {
-					// TODO Auto-generated method stub
-					
-				}
-
+				public void humidityMeasured(EventObject arg0) {}
 				@Override
-				public void unknown(EventObject arg0) {
-					// TODO Auto-generated method stub
-					
-				}
-
+				public void i2cRead(EventObject arg0) {}
 				@Override
-				public void usbUartRead(EventObject arg0) {
-					// TODO Auto-generated method stub
-					
-				}
+				public void irTemperatureMeasured(EventObject arg0) {}
+				@Override
+				public void oxidizingGasMeasured(EventObject arg0) {}
+				@Override
+				public void pressureMeasured(EventObject arg0) {}
+				@Override
+				public void reducingGasMeasured(EventObject arg0) {}
+				@Override
+				public void rgbcMeasured(EventObject arg0) {}
+				@Override
+				public void temperatureMeasured(EventObject arg0) {}
+				@Override
+				public void uartRead(EventObject arg0) {}
+				@Override
+				public void unknown(EventObject arg0) {}
+				@Override
+				public void usbUartRead(EventObject arg0) {}
 			};
 			
+			/*
+			 * Set up our status listener
+			 * 
+			 * see adcStatus for the general flow for sensors.
+			 */
 			droneStatusListener = new DroneStatusListener() {
-
-				@Override
-				public void adcStatus(EventObject arg0) {
-					
-				}
-
-				@Override
-				public void altitudeStatus(EventObject arg0) {
-				
-
-				}
-
-				@Override
-				public void batteryVoltageStatus(EventObject arg0) {
-					
-				}
-
-				@Override
-				public void capacitanceStatus(EventObject arg0) {
-					
-				}
-
-				@Override
-				public void chargingStatus(EventObject arg0) {
-
-
-				}
-
-				@Override
-				public void customStatus(EventObject arg0) {
-
-
-				}
-
-				@Override
-				public void humidityStatus(EventObject arg0) {
-					
-
-				}
-
-				@Override
-				public void irStatus(EventObject arg0) {
-					
-				}
-
-				@Override
-				public void lowBatteryStatus(EventObject arg0) {
-					
-				}
-
-				@Override
-				public void oxidizingGasStatus(EventObject arg0) {
-
-
-				}
 
 				@Override
 				public void precisionGasStatus(EventObject arg0) {
 					streamer.run();
-
 				}
-
+				
+				/*
+				 * Unused statuses
+				 */
 				@Override
-				public void pressureStatus(EventObject arg0) {
-					
-				}
-
+				public void adcStatus(EventObject arg0) {}
 				@Override
-				public void reducingGasStatus(EventObject arg0) {
-
-
-				}
-
+				public void altitudeStatus(EventObject arg0) {}
 				@Override
-				public void rgbcStatus(EventObject arg0) {
-
-				}
-
+				public void batteryVoltageStatus(EventObject arg0) {}
 				@Override
-				public void temperatureStatus(EventObject arg0) {
-					
-				}
-
+				public void capacitanceStatus(EventObject arg0) {}
 				@Override
-				public void unknownStatus(EventObject arg0) {
-
-
-				}
+				public void chargingStatus(EventObject arg0) {}
+				@Override
+				public void customStatus(EventObject arg0) {}
+				@Override
+				public void humidityStatus(EventObject arg0) {}
+				@Override
+				public void irStatus(EventObject arg0) {}
+				@Override
+				public void lowBatteryStatus(EventObject arg0) {}
+				@Override
+				public void oxidizingGasStatus(EventObject arg0) {}
+				@Override
+				public void pressureStatus(EventObject arg0) {}
+				@Override
+				public void reducingGasStatus(EventObject arg0) {}
+				@Override
+				public void rgbcStatus(EventObject arg0) {}
+				@Override
+				public void temperatureStatus(EventObject arg0) {}
+				@Override
+				public void unknownStatus(EventObject arg0) {}
 			};
 			
+			// Register the listeners
 			myDrone.registerDroneEventListener(droneEventListener);
 			myDrone.registerDroneStatusListener(droneStatusListener);
 		}
