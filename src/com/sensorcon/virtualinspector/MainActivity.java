@@ -19,6 +19,7 @@ import android.content.Context;
 import android.graphics.Typeface;
 import android.util.Log;
 import android.view.Menu;
+import android.view.MenuItem;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.View.OnTouchListener;
@@ -51,11 +52,17 @@ public class MainActivity extends Activity {
 	 * Measurement variables
 	 */
 	public int concentration;
+	public int offset;
+	public int shownConcentration;
 	public int numMeasurements;
 	public int[] values = new int[10];
+	public int[] blValues = new int[15];
 	public int sum;
 	public int average;
+	public int blSum;
+	public int blAverage;
 	public int max;
+	private BaselineStream blStream;
 	/*
 	 * Alarm variables
 	 */
@@ -92,6 +99,7 @@ public class MainActivity extends Activity {
 	public boolean inNormalMode;
 	public boolean inCountdownMode;
 	public boolean inBaselineMode;
+	public boolean inBaselineCalcMode;
 	public boolean lowAlarmActivated;
 	public boolean highAlarmActivated;
 	public boolean ledsActivated;
@@ -100,8 +108,12 @@ public class MainActivity extends Activity {
 	public boolean poweredOn;
 	public boolean btHoldActivated;
 	public boolean showMax;
+	/*
+	 * Timing variables
+	 */
 	public int countdown;
 	private int btCount;
+	private int baselineCount;
 	/*
 	 * Accessable view variables from GUI
 	 */
@@ -123,7 +135,7 @@ public class MainActivity extends Activity {
 	private TextView labelHold;
 	private ImageView arrowLeft;
 	private ImageView arrowRight;
-	
+	private TextView labelDone;
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
@@ -149,12 +161,14 @@ public class MainActivity extends Activity {
 		labelHold = (TextView)findViewById(R.id.labelHold);
 		countdownValue = (TextView)findViewById(R.id.countdownValue);
 		labelCal = (TextView)findViewById(R.id.labelCal);
+		labelDone = (TextView)findViewById(R.id.labelDone);
 		
 		// Set LED font
 		lcdFont = Typeface.createFromAsset(this.getAssets(), "DS-DIGI.TTF");	
 		ppmValue.setTypeface(lcdFont);		
 		countdownValue.setTypeface(lcdFont);	
 		labelCal.setTypeface(lcdFont);
+		labelDone.setTypeface(lcdFont);
 
 		// Make certain view invisible 
 		leftButtonPressed.setVisibility(View.GONE);
@@ -173,6 +187,7 @@ public class MainActivity extends Activity {
 		labelHold.setVisibility(View.GONE);
 		labelCal.setVisibility(View.GONE);
 		countdownValue.setVisibility(View.GONE);
+		labelDone.setVisibility(View.GONE);
 		
 		// Initialize alarm
 		alarmSound = new SoundPool(10, AudioManager.STREAM_ALARM, 0);
@@ -191,6 +206,7 @@ public class MainActivity extends Activity {
 		inNormalMode = false;
 		inCountdownMode = false;
 		inBaselineMode = false;
+		inBaselineCalcMode = false;
 		btHoldActivated = false;
 		lowAlarmActivated = false;
 		highAlarmActivated = false;
@@ -200,17 +216,33 @@ public class MainActivity extends Activity {
 
 		// Initialize equation variables
 		concentration = 0;
+		shownConcentration = 0;
 		average = 0;
+		blAverage = 0;
 		numMeasurements = 0;
 		sum = 0;
+		blSum = 0;
 		for(int i = 0; i < MAX_MEASUREMENTS; i++) {
 			values[i] = 0;
 		}
+		for(int i = 0; i < 15; i++) {
+			blValues[i] = 0;
+		}
 		max = 0;
+		blStream = new BaselineStream();
+		blStream.initFile(this);
+		offset = blStream.readOffset();
+		
+		if(offset == -1) {
+			offset = 0;
+		}
+		
+		Log.d(TAG, Integer.toString(offset));
 		
 		// Initialize timing variables
 		countdown = 4;
 		btCount = 0;
+		baselineCount = 30;
 		ledTiming = 1000;
 		cycles = 0;
 		count = 0;
@@ -245,7 +277,7 @@ public class MainActivity extends Activity {
 						// If device is disconnected, only do bluetooth count
 						bluetoothHoldMode();
 					}
-					Log.d(TAG, "Left button pressed\n");
+					//Log.d(TAG, "Left button pressed\n");
 				}
 				/*
 				 * If button is released
@@ -275,7 +307,7 @@ public class MainActivity extends Activity {
 							}
 						}
 					}
-					Log.d(TAG, "Left button not pressed\n");
+					//Log.d(TAG, "Left button not pressed\n");
 				}
 				return true;
 			}
@@ -305,8 +337,13 @@ public class MainActivity extends Activity {
 						else {
 							toggleMax();
 						}
+						
+						// Calculate baseline
+						if(inBaselineMode) {
+							baselineCalcMode();
+						}
 					}
-					Log.d(TAG, "Right button pressed\n");
+					//Log.d(TAG, "Right button pressed\n");
 				}
 				/*
 				 * If button is released
@@ -332,7 +369,7 @@ public class MainActivity extends Activity {
 							}
 						}
 					}			
-					Log.d(TAG, "Right button not pressed\n");
+					//Log.d(TAG, "Right button not pressed\n");
 				}
 				return true;
 			}
@@ -373,6 +410,20 @@ public class MainActivity extends Activity {
 	public boolean onCreateOptionsMenu(Menu menu) {
 		// Inflate the menu; this adds items to the action bar if it is present.
 		getMenuInflater().inflate(R.menu.main, menu);
+		
+		return true;
+	}
+	
+	@Override
+	public boolean onOptionsItemSelected(MenuItem item){
+		switch(item.getItemId()){
+		case R.id.resetBaseline:
+			offset = 0;
+			blStream.reset();
+			blStream.initFile(this);
+			break;
+		}
+			
 		return true;
 	}
 	
@@ -609,6 +660,14 @@ public class MainActivity extends Activity {
 	}
 	
 	/**
+	 * Sends program to baseline count mode
+	 */
+	public void baselineCalcMode() {
+		initBaselineCalcMode();
+		myHandler.post(baselineCalcRunnable);
+	}
+	
+	/**
 	 * Activates bluetooth count to connect/disconnect
 	 */
 	public void bluetoothHoldMode() {	
@@ -641,6 +700,7 @@ public class MainActivity extends Activity {
 		
 		countdownValue.setVisibility(View.VISIBLE);
 		labelHold.setVisibility(View.VISIBLE);
+		countdown = 4;
 		inCountdownMode = true;
 	}
 	
@@ -653,6 +713,18 @@ public class MainActivity extends Activity {
 		labelZero.setVisibility(View.VISIBLE);
 		labelCal.setVisibility(View.VISIBLE);
 		inBaselineMode = true;
+	}
+	
+	/**
+	 * Sets views and flags for baseline count mode
+	 */
+	private void initBaselineCalcMode() {
+		clearScreenAndFlags(false);
+		
+		countdownValue.setVisibility(View.VISIBLE);
+		labelZero.setVisibility(View.VISIBLE);
+		baselineCount = 30;
+		inBaselineCalcMode = true;
 	}
 	
 	/**
@@ -669,6 +741,7 @@ public class MainActivity extends Activity {
 		labelCal.setVisibility(View.GONE);
 		arrowLeft.setVisibility(View.GONE);
 		arrowRight.setVisibility(View.GONE);
+		labelDone.setVisibility(View.GONE);
 		leftPressed = false;
 		rightPressed = false;
 		leftArrowOn = false;
@@ -676,6 +749,7 @@ public class MainActivity extends Activity {
 		if(rememberLastMode == false) { inNormalMode = false; }
 		inCountdownMode = false;
 		if(rememberLastMode == false) { inBaselineMode = false; }
+		inBaselineCalcMode = false;
 		btHoldActivated = false;
 		lowAlarmActivated = false;
 		highAlarmActivated = false;
@@ -696,7 +770,7 @@ public class MainActivity extends Activity {
 		
 		@Override
 		public void run() {
-			Log.d(TAG, "In led" );
+
 			if(ledsActivated) {
 				switch(count) {
 				case 0:
@@ -805,12 +879,11 @@ public class MainActivity extends Activity {
 			if(inCountdownMode) {
 				countdown--;
 				
-				Log.d(TAG, Integer.toString(countdown));
-				
 				if(countdown == 0) {
 					countdown = 4;
+					
 					if(inBaselineMode) {
-						initNormalMode();
+						normalMode();
 						inBaselineMode = false;
 					}
 					else {
@@ -824,6 +897,52 @@ public class MainActivity extends Activity {
 					countdownValue.setText(Integer.toString(countdown));
 					myHandler.postDelayed(this, 1000);
 				}
+			}
+		}
+	};
+	
+	/*
+	 * Controls timing thread for countdown
+	 */
+	public Runnable baselineCalcRunnable = new Runnable() {
+
+		@Override
+		public void run() {
+			
+			if(inBaselineCalcMode) {
+				baselineCount--;
+				
+				if(baselineCount < 15) {
+					blValues[baselineCount] = concentration;
+				}
+				
+				if(baselineCount == 0) {
+					clearScreenAndFlags(false);
+					labelDone.setVisibility(View.VISIBLE);
+					
+					// Calculate offset and write to file
+					for(int i = 0; i < 15; i++) {
+						blSum += blValues[i];
+					}
+					blAverage = blSum/15;
+					
+					Log.d(TAG, "blAverage: " + Integer.toString(blAverage));
+					
+					blStream.writeOffset(blAverage);
+					offset = blAverage;
+					
+					myHandler.postDelayed(this, 1000);
+				}
+				else if(inBaselineCalcMode == false) {
+					baselineCount = 30;
+				}
+				else {
+					countdownValue.setText(Integer.toString(baselineCount));
+					myHandler.postDelayed(this, 1000);
+				}
+			}
+			else {
+				normalMode();
 			}
 		}
 	};
@@ -859,11 +978,8 @@ public class MainActivity extends Activity {
 
 		@Override
 		public void run() {
-			Log.d(TAG, "In bt handler");
 			if(btHoldActivated) {
 				btCount++;
-				
-				Log.d(TAG, Integer.toString(btCount));
 				
 				if(btCount == 3) {
 					btCount = 0;
@@ -895,16 +1011,23 @@ public class MainActivity extends Activity {
 		public void run() {
 			
 			if(inNormalMode && poweredOn) {
+				
+				shownConcentration = average - offset;
+				
+				if(shownConcentration < 0) {
+					shownConcentration = 0;
+				}
+				
 				// Check for new max
-				if(average > max) {
-					max = average;
+				if(shownConcentration > max) {
+					max = shownConcentration;
 				}
 				
 				if(showMax == true) {
 					ppmValue.setText(Integer.toString(max));
 				}
 				else {
-					ppmValue.setText(Integer.toString(average));
+					ppmValue.setText(Integer.toString(shownConcentration));
 				}
 					
 				myHandler.postDelayed(this, 1000);
