@@ -5,5 +5,27 @@
     <string name="action_settings">Settings</string>
     
     <color name="black">#000000</color>
-
+    
+    <string name="label1">Connect</string>
+    <string name="label2">Mute</string>
+    <string name="label3">Max</string>
+    <string name="label4">Baseline</string>
+     <string name="label5">Disconnect</string>
+    
+    <string name="tab1_string">
+        Hold left button for three seconds, then a list of nearby sensordrones will appear. Select the drone you would like to connect to. The LEDs on the drone will blink and the concentration is now displayed on the LCD.
+    </string>
+    <string name="tab2_string">
+        If an alarm is going off and you would like to mute the device, press the left button. An arrow will appear above the mute label on the LCD screen. To unmute, just press the left button again.
+    </string>
+    <string name="tab3_string">
+        The right button will hold the maximum value that is measured. After it is pressed, an arrow appears above the max label and the program will only show the highest recorded concentration. To remove this functionality, simply press the right button again.
+    </string>
+	<string name="tab4_string">
+	    There may be a situation where you want to zero out the device, such as if it is always reading above 0 PPM and you believe that there is no CO present. To do this you will reset the baseline. Press and hold both buttons for 3 seconds. You will then see a screen that says CAL. Press the right button to start calculating the new baseline. After 30 seconds, the device should be zeroed. If you want to undo the baseline, select Reset Baseline in the top right menu. If you would like to go back to normal mode while in this mode, hold down both buttons for 3 seconds.
+	</string>
+	<string name="tab5_string">
+	    To disconnect, hold the left button for three seconds.
+	</string>	    
+    
 </resources>

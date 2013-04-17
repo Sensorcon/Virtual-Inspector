@@ -1,5 +1,6 @@
 <menu xmlns:android="http://schemas.android.com/apk/res/android" >
 
+  <item android:id="@+id/instructions" android:title="Instructions"></item>
   <item android:id="@+id/resetBaseline" android:title="Reset Baseline"></item>
 
 </menu>

@@ -16,7 +16,9 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.app.Activity;
 import android.content.Context;
+import android.content.Intent;
 import android.graphics.Typeface;
+import android.text.Html;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -421,6 +423,10 @@ public class MainActivity extends Activity {
 			offset = 0;
 			blStream.reset();
 			blStream.initFile(this);
+			break;
+		case R.id.instructions:
+			Intent myIntent = new Intent(getApplicationContext(), InstructionsActivity.class);
+			startActivity(myIntent);
 			break;
 		}
 			
@@ -1134,7 +1140,7 @@ public class MainActivity extends Activity {
 					
 					average = sum/MAX_MEASUREMENTS;
 					
-					if(average >= LOW_ALARM_THRESHOLD) {
+					if((average >= LOW_ALARM_THRESHOLD) && (average < HIGH_ALARM_THRESHOLD)  ) {
 						if(lowAlarmActivated == false) {
 							lowAlarmActivated = true;
 							ledsActivated = true;
