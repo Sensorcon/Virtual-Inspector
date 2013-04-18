@@ -12,6 +12,10 @@
     <string name="label4">Baseline</string>
      <string name="label5">Disconnect</string>
     
+     <string name="intro">
+         If you are new to the Inspector app, you should read through the instructions. To access them, go to the top right menu and select Instructions.
+     </string>
+     
     <string name="tab1_string">
         Hold left button for three seconds, then a list of nearby sensordrones will appear. Select the drone you would like to connect to. The LEDs on the drone will blink and the concentration is now displayed on the LCD.
     </string>
@@ -22,7 +26,7 @@
         The right button will hold the maximum value that is measured. After it is pressed, an arrow appears above the max label and the program will only show the highest recorded concentration. To remove this functionality, simply press the right button again.
     </string>
 	<string name="tab4_string">
-	    There may be a situation where you want to zero out the device, such as if it is always reading above 0 PPM and you believe that there is no CO present. To do this you will reset the baseline. Press and hold both buttons for 3 seconds. You will then see a screen that says CAL. Press the right button to start calculating the new baseline. After 30 seconds, the device should be zeroed. If you want to undo the baseline, select Reset Baseline in the top right menu. If you would like to go back to normal mode while in this mode, hold down both buttons for 3 seconds.
+	    There may be a situation where you want to zero out the device, such as if it is always reading above 0 PPM and you believe that there is no CO present. To do this you will reset the baseline. Press and hold both buttons for 3 seconds. You will then see a screen that says CAL. Press the right button to start calculating the new baseline. After 30 seconds, the device should be zeroed. If you want to cancel while it is counting down, press the right button. If you want to undo the baseline, select Reset Baseline in the top right menu. If you would like to go back to normal mode while in this mode, hold down both buttons for 3 seconds.
 	</string>
 	<string name="tab5_string">
 	    To disconnect, hold the left button for three seconds.

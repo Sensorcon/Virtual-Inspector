@@ -2,5 +2,6 @@
 
   <item android:id="@+id/instructions" android:title="Instructions"></item>
   <item android:id="@+id/resetBaseline" android:title="Reset Baseline"></item>
+  <item android:id="@+id/factoryReset" android:title="Factory Reset"></item>
 
 </menu>

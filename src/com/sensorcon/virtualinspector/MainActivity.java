@@ -9,15 +9,23 @@ import com.sensorcon.sensordrone.Drone;
 import com.sensorcon.sensordrone.Drone.DroneEventListener;
 import com.sensorcon.sensordrone.Drone.DroneStatusListener;
 
+import android.support.v4.app.FragmentActivity;
+import android.support.v4.app.FragmentManager;
+
 import android.media.AudioManager;
 import android.media.SoundPool;
 import android.media.SoundPool.OnLoadCompleteListener;
 import android.os.Bundle;
 import android.os.Handler;
+import android.annotation.SuppressLint;
 import android.app.Activity;
+import android.app.AlertDialog;
+import android.app.Dialog;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.graphics.Typeface;
+import android.support.v4.app.DialogFragment;
 import android.text.Html;
 import android.util.Log;
 import android.view.Menu;
@@ -46,10 +54,10 @@ public class MainActivity extends Activity {
 	 */
 	private final String TAG = "chris";
 	private final int MAX_MEASUREMENTS = 10;
-	private final int LOW_ALARM_THRESHOLD = 35;
+	private final int LOW_ALARM_THRESHOLD = 15;
 	private final int HIGH_ALARM_THRESHOLD = 200;
 	private final int LOW_ALARM_TIMING = 1000;
-	private final int HIGH_ALARM_TIMING = 250;
+	private final int HIGH_ALARM_TIMING = 500;
 	/*
 	 * Measurement variables
 	 */
@@ -65,6 +73,7 @@ public class MainActivity extends Activity {
 	public int blAverage;
 	public int max;
 	private BaselineStream blStream;
+	private PreferencesStream pStream;
 	/*
 	 * Alarm variables
 	 */
@@ -102,6 +111,7 @@ public class MainActivity extends Activity {
 	public boolean inCountdownMode;
 	public boolean inBaselineMode;
 	public boolean inBaselineCalcMode;
+	public boolean inAlarmMode;
 	public boolean lowAlarmActivated;
 	public boolean highAlarmActivated;
 	public boolean ledsActivated;
@@ -110,6 +120,7 @@ public class MainActivity extends Activity {
 	public boolean poweredOn;
 	public boolean btHoldActivated;
 	public boolean showMax;
+	public boolean showIntro;
 	/*
 	 * Timing variables
 	 */
@@ -210,11 +221,13 @@ public class MainActivity extends Activity {
 		inBaselineMode = false;
 		inBaselineCalcMode = false;
 		btHoldActivated = false;
+		inAlarmMode = false;
 		lowAlarmActivated = false;
 		highAlarmActivated = false;
 		ledsActivated = false;
 		poweredOn = false;
 		showMax = false;
+		showIntro = true;
 
 		// Initialize equation variables
 		concentration = 0;
@@ -239,7 +252,17 @@ public class MainActivity extends Activity {
 			offset = 0;
 		}
 		
+		pStream = new PreferencesStream();
+		pStream.initFile(this);
+		String[] preferences = new String[1];
+		preferences = pStream.readPreferences();
+		
+		if(preferences[0].equals("DISABLE INTRO")){
+			showIntro = false;
+		}
+		
 		Log.d(TAG, Integer.toString(offset));
+		Log.d(TAG, preferences[0]);
 		
 		// Initialize timing variables
 		countdown = 4;
@@ -296,7 +319,7 @@ public class MainActivity extends Activity {
 					// Do only if connected to drone
 					if(poweredOn) {
 						// If in middle of countdown mode, go back to previous mode
-						if(inCountdownMode == true) {
+						if(inCountdownMode) {
 							// Reset countdown
 							countdown = 4;
 							
@@ -337,12 +360,16 @@ public class MainActivity extends Activity {
 						}
 						// Otherwise, toggle max
 						else {
-							toggleMax();
-						}
-						
-						// Calculate baseline
-						if(inBaselineMode) {
-							baselineCalcMode();
+							// Calculate baseline
+							if(inBaselineMode) {
+								baselineCalcMode();
+							}
+							else if(inBaselineCalcMode) {
+								normalMode();
+							}
+							else {
+								toggleMax();
+							}
 						}
 					}
 					//Log.d(TAG, "Right button pressed\n");
@@ -358,7 +385,7 @@ public class MainActivity extends Activity {
 					// Do only if connected to drone
 					if(poweredOn) {
 						// If in middle of countdown mode, go back to previous mode
-						if(inCountdownMode == true) {
+						if(inCountdownMode) {
 							// Reset countdown
 							countdown = 4;
 							
@@ -420,13 +447,14 @@ public class MainActivity extends Activity {
 	public boolean onOptionsItemSelected(MenuItem item){
 		switch(item.getItemId()){
 		case R.id.resetBaseline:
-			offset = 0;
-			blStream.reset();
-			blStream.initFile(this);
+			showResetBaselineDialog();
 			break;
 		case R.id.instructions:
 			Intent myIntent = new Intent(getApplicationContext(), InstructionsActivity.class);
 			startActivity(myIntent);
+			break;
+		case R.id.factoryReset:
+			showFactoryResetDialog();
 			break;
 		}
 			
@@ -454,6 +482,65 @@ public class MainActivity extends Activity {
 	 * HELPFUL FUNCTIONS
 	 *************************************************************************************************
 	 *************************************************************************************************/
+	public void showIntroDialog() {
+
+		AlertDialog.Builder alert = new AlertDialog.Builder(this);
+		alert.setTitle("Introduction").setMessage("If you are new to the Inspector app, you should read through the instructions. To access them, go to the top right menu and select Instructions.");
+		alert.setPositiveButton("Don't Show Again", new DialogInterface.OnClickListener() {
+		        public void onClick(DialogInterface dialog, int which) { 
+		            pStream.disableIntroDialog();
+		        }
+		     })
+		    .setNegativeButton("Okay", new DialogInterface.OnClickListener() {
+		        public void onClick(DialogInterface dialog, int which) { 
+		            // do nothing
+		        }
+		     }).show();
+	}
+	
+	public void showResetBaselineDialog() {
+
+		AlertDialog.Builder alert = new AlertDialog.Builder(this);
+		alert.setTitle("Reset Baseline").setMessage("Are you sure you want to remove the baseline offset?");
+		alert.setPositiveButton("No", new DialogInterface.OnClickListener() {
+		        public void onClick(DialogInterface dialog, int which) { 
+		        }
+		     })
+		    .setNegativeButton("Yes", new DialogInterface.OnClickListener() {
+		        public void onClick(DialogInterface dialog, int which) { 
+		        	resetBaseline();
+		        }
+		     }).show();
+	}
+	
+	public void showFactoryResetDialog() {
+
+		AlertDialog.Builder alert = new AlertDialog.Builder(this);
+		alert.setTitle("Factory Reset").setMessage("Are you sure you would like to reset all saved user settings?");
+		alert.setPositiveButton("No", new DialogInterface.OnClickListener() {
+		        public void onClick(DialogInterface dialog, int which) { 
+		        }
+		     })
+		    .setNegativeButton("Yes", new DialogInterface.OnClickListener() {
+		        public void onClick(DialogInterface dialog, int which) { 
+		            factoryReset();
+		        }
+		     }).show();
+	}
+	
+	public void resetBaseline() {
+		offset = 0;
+		blStream.reset();
+		blStream.initFile(this);
+	}
+	
+	public void factoryReset() {
+		offset = 0;
+		blStream.reset();
+		blStream.initFile(this);
+		
+		pStream.reset();
+	}
 	
 	/**
 	 * Scans for nearby sensordrones and brings up list
@@ -638,9 +725,12 @@ public class MainActivity extends Activity {
 	 * Sends program to normal mode
 	 */
 	public void normalMode() {
+		Log.d(TAG, "In Normal Mode");
+		
 		if(poweredOn) {
 			initNormalMode();
 			myHandler.post(displayConcentrationRunnable);
+			//myHandler.post(calculateAverageRunnable);
 		}
 		else {
 			// Display connection message
@@ -652,7 +742,9 @@ public class MainActivity extends Activity {
 	/**
 	 * Sends program to countdown mode
 	 */
-	public void countdownMode() {		
+	public void countdownMode() {	
+		Log.d(TAG, "In Countdown Mode");
+		
 		initCountdownMode();
 		myHandler.post(countdownRunnable);
 	}
@@ -661,6 +753,8 @@ public class MainActivity extends Activity {
 	 * Sends program to baseline mode
 	 */
 	public void baselineMode() {
+		Log.d(TAG, "In Baseline Mode");
+		
 		initBaselineMode();
 		myHandler.post(arrowRunnable);
 	}
@@ -669,6 +763,8 @@ public class MainActivity extends Activity {
 	 * Sends program to baseline count mode
 	 */
 	public void baselineCalcMode() {
+		Log.d(TAG, "In Calc Mode");
+		
 		initBaselineCalcMode();
 		myHandler.post(baselineCalcRunnable);
 	}
@@ -830,8 +926,6 @@ public class MainActivity extends Activity {
 						ledTiming = 125;
 					}
 					
-					myHandler.postDelayed(this, ledTiming);
-					
 					if(leftArrowOn == false) {
 						if(lowAlarmActivated || highAlarmActivated) {
 							beep();
@@ -839,7 +933,7 @@ public class MainActivity extends Activity {
 					}
 				}
 				else {
-					myHandler.postDelayed(this, 125);
+					ledTiming = 125;
 				}
 				
 				/*
@@ -858,12 +952,19 @@ public class MainActivity extends Activity {
 						labelInspectorGray.setVisibility(View.GONE);
 						startUpLEDSequence = false;
 						ledsActivated = false;
+						
+						if(showIntro) {
+							showIntroDialog();
+						}
+						
 						normalMode();
 						break;
 					default:
 						break;
 					}
 				}
+				
+				myHandler.postDelayed(this, ledTiming);
 			}
 			else {
 				disableLED(0);
@@ -1016,30 +1117,103 @@ public class MainActivity extends Activity {
 		@Override
 		public void run() {
 			
-			if(inNormalMode && poweredOn) {
+			if(inNormalMode && poweredOn && !inCountdownMode) {
 				
-				shownConcentration = average - offset;
-				
-				if(shownConcentration < 0) {
-					shownConcentration = 0;
+				if((concentration >= LOW_ALARM_THRESHOLD) && (concentration < HIGH_ALARM_THRESHOLD)  ) {
+					
+					if(lowAlarmActivated == false) {
+						lowAlarmActivated = true;
+						highAlarmActivated = false;
+						ledsActivated = true;
+						if(inAlarmMode == false) {
+							myHandler.post(LEDRunnable);
+						}
+						
+						inAlarmMode = true;
+					}
+				}
+				else if(concentration >= HIGH_ALARM_THRESHOLD) {
+					if(highAlarmActivated == false) {
+						lowAlarmActivated = false;
+						highAlarmActivated = true;
+						ledsActivated = true;
+					}
+				}
+				else {
+					ledsActivated = false;
+					lowAlarmActivated = false;
+					highAlarmActivated = false;
+					inAlarmMode = false;
 				}
 				
 				// Check for new max
-				if(shownConcentration > max) {
-					max = shownConcentration;
+				if(concentration > max) {
+					max = concentration;
 				}
 				
 				if(showMax == true) {
 					ppmValue.setText(Integer.toString(max));
 				}
 				else {
-					ppmValue.setText(Integer.toString(shownConcentration));
+					ppmValue.setText(Integer.toString(concentration));
 				}
 					
 				myHandler.postDelayed(this, 1000);
 			}
 		}
 	};
+	
+//	public Runnable calculateAverageRunnable = new Runnable() {
+//
+//		@Override
+//		public void run() {
+//			
+//			if(inNormalMode && poweredOn && !inCountdownMode) {
+//				
+//				values[numMeasurements] = concentration;
+//				numMeasurements++;
+//				
+//				if(numMeasurements == MAX_MEASUREMENTS) {
+//					numMeasurements = 0;
+//				}
+//				
+//				sum = 0;
+//				for(int i = 0; i < MAX_MEASUREMENTS; i++) {
+//					sum += values[i];
+//				}
+//				
+//				average = sum/MAX_MEASUREMENTS - offset;
+//				
+//				if((average >= LOW_ALARM_THRESHOLD) && (average < HIGH_ALARM_THRESHOLD)  ) {
+//					if(lowAlarmActivated == false) {
+//						lowAlarmActivated = true;
+//						highAlarmActivated = false;
+//						ledsActivated = true;
+//						myHandler.post(LEDRunnable);
+//					}
+//				}
+//				else if(average >= HIGH_ALARM_THRESHOLD) {
+//					if(highAlarmActivated == false) {
+//						lowAlarmActivated = false;
+//						highAlarmActivated = true;
+//						ledsActivated = true;
+//						myHandler.post(LEDRunnable);
+//					}
+//				}
+//				else {
+//					ledsActivated = false;
+//					lowAlarmActivated = false;
+//					highAlarmActivated = false;
+//				}
+//				
+//				if(average < 0) {
+//					average = 0;
+//				}
+//			}
+//				
+//			myHandler.postDelayed(this, 125);
+//		}
+//	};
 	
 	/*
 	 * Because Android will destroy and re-create things on events like orientation changes,
@@ -1124,43 +1298,16 @@ public class MainActivity extends Activity {
 
 				@Override
 				public void precisionGasMeasured(EventObject arg0) {
-					concentration = (int)myDrone.precisionGas_ppmCarbonMonoxide;
-					
-					values[numMeasurements] = concentration;
-					numMeasurements++;
-					
-					if(numMeasurements == MAX_MEASUREMENTS) {
-						numMeasurements = 0;
-					}
-					
-					sum = 0;
-					for(int i = 0; i < MAX_MEASUREMENTS; i++) {
-						sum += values[i];
-					}
-					
-					average = sum/MAX_MEASUREMENTS;
-					
-					if((average >= LOW_ALARM_THRESHOLD) && (average < HIGH_ALARM_THRESHOLD)  ) {
-						if(lowAlarmActivated == false) {
-							lowAlarmActivated = true;
-							ledsActivated = true;
-							myHandler.post(LEDRunnable);
-						}
-					}
-					else if(average >= HIGH_ALARM_THRESHOLD) {
-						if(highAlarmActivated == false) {
-							highAlarmActivated = true;
-							ledsActivated = true;
-							myHandler.post(LEDRunnable);
-						}
+					if(inNormalMode && poweredOn && !inCountdownMode) {
+						concentration = (int)myDrone.precisionGas_ppmCarbonMonoxide;
+						
+						
 					}
 					else {
-						ledsActivated = false;
-						lowAlarmActivated = false;
-						highAlarmActivated = false;
+						concentration = 0;
 					}
 					
-					streamer.streamHandler.postDelayed(streamer, 1);
+					streamer.streamHandler.postDelayed(streamer, 100);
 				}
 
 				/*
