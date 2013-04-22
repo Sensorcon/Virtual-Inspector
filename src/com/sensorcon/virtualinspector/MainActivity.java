@@ -12,6 +12,7 @@ import com.sensorcon.sensordrone.Drone.DroneStatusListener;
 import android.support.v4.app.FragmentActivity;
 import android.support.v4.app.FragmentManager;
 
+import android.view.WindowManager;
 import android.media.AudioManager;
 import android.media.SoundPool;
 import android.media.SoundPool.OnLoadCompleteListener;
@@ -24,10 +25,14 @@ import android.app.Dialog;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.res.Configuration;
+import android.graphics.Bitmap;
+import android.graphics.Rect;
 import android.graphics.Typeface;
 import android.support.v4.app.DialogFragment;
 import android.text.Html;
 import android.util.Log;
+import android.view.Display;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.MotionEvent;
@@ -47,12 +52,15 @@ import android.widget.Toast;
  * @author Sensorcon, Inc.
  * @version 1.0.0
  */
+@SuppressLint("NewApi")
 public class MainActivity extends Activity {
 	
 	/*
 	 * Constants
 	 */
 	private final String TAG = "chris";
+	private final String NORMAL_MODE = "NORMAL";
+	private final String BASELINE_MODE = "BASELINE";
 	private final int MAX_MEASUREMENTS = 10;
 	private final int LOW_ALARM_THRESHOLD = 15;
 	private final int HIGH_ALARM_THRESHOLD = 200;
@@ -87,7 +95,13 @@ public class MainActivity extends Activity {
 	 */
 	protected Drone myDrone;
 	public Storage box;
-	private Handler myHandler = new Handler();
+	private Handler ledHandler = new Handler();
+	private Handler countdownHandler = new Handler();
+	private Handler baselineCalcHandler = new Handler();
+	private Handler arrowHandler = new Handler();
+	private Handler btCountHandler = new Handler();
+	private Handler powerDownHandler = new Handler();
+	private Handler displayConcentrationHandler = new Handler();
 	/*
 	 * Contains functions to simplify connectivity
 	 */
@@ -111,6 +125,7 @@ public class MainActivity extends Activity {
 	public boolean inCountdownMode;
 	public boolean inBaselineMode;
 	public boolean inBaselineCalcMode;
+	public boolean inPowerDownMode;
 	public boolean inAlarmMode;
 	public boolean lowAlarmActivated;
 	public boolean highAlarmActivated;
@@ -121,11 +136,13 @@ public class MainActivity extends Activity {
 	public boolean btHoldActivated;
 	public boolean showMax;
 	public boolean showIntro;
+	private String previousMode;
 	/*
 	 * Timing variables
 	 */
 	public int countdown;
 	private int btCount;
+	private int powerDownCount;
 	private int baselineCount;
 	/*
 	 * Accessable view variables from GUI
@@ -136,7 +153,10 @@ public class MainActivity extends Activity {
 	public ImageView ledBottomRight_on;
 	private ImageView logoSensorconGray;
 	private ImageView labelInspectorGray;
-	private TextView ppmValue;
+	private TextView ppmValue0;
+	private TextView ppmValue1;
+	private TextView ppmValue2;
+	private TextView ppmValue3;
 	private TextView countdownValue;
 	private TextView labelPPM;
 	private ImageButton leftButton;
@@ -168,7 +188,10 @@ public class MainActivity extends Activity {
 		rightButtonPressed = (ImageButton)findViewById(R.id.buttonRight_pressed);
 		arrowLeft = (ImageView)findViewById(R.id.arrowLeft);
 		arrowRight = (ImageView)findViewById(R.id.arrowRight);
-		ppmValue = (TextView)findViewById(R.id.ppmValue);
+		ppmValue0 = (TextView)findViewById(R.id.ppmValue0);
+		ppmValue1 = (TextView)findViewById(R.id.ppmValue1);
+		ppmValue2 = (TextView)findViewById(R.id.ppmValue2);
+		ppmValue3 = (TextView)findViewById(R.id.ppmValue3);
 		labelPPM = (TextView)findViewById(R.id.labelPPM);
 		labelZero = (TextView)findViewById(R.id.labelZero);
 		labelHold = (TextView)findViewById(R.id.labelHold);
@@ -178,7 +201,10 @@ public class MainActivity extends Activity {
 		
 		// Set LED font
 		lcdFont = Typeface.createFromAsset(this.getAssets(), "DS-DIGI.TTF");	
-		ppmValue.setTypeface(lcdFont);		
+		ppmValue0.setTypeface(lcdFont);
+		ppmValue1.setTypeface(lcdFont);	
+		ppmValue2.setTypeface(lcdFont);	
+		ppmValue3.setTypeface(lcdFont);	
 		countdownValue.setTypeface(lcdFont);	
 		labelCal.setTypeface(lcdFont);
 		labelDone.setTypeface(lcdFont);
@@ -194,7 +220,10 @@ public class MainActivity extends Activity {
 		ledBottomRight_on.setVisibility(View.GONE);
 		logoSensorconGray.setVisibility(View.GONE);
 		labelInspectorGray.setVisibility(View.GONE);	
-		ppmValue.setVisibility(View.GONE);
+		ppmValue0.setVisibility(View.GONE);
+		ppmValue1.setVisibility(View.GONE);
+		ppmValue2.setVisibility(View.GONE);
+		ppmValue3.setVisibility(View.GONE);
 		labelPPM.setVisibility(View.GONE);
 		labelZero.setVisibility(View.GONE);
 		labelHold.setVisibility(View.GONE);
@@ -221,6 +250,7 @@ public class MainActivity extends Activity {
 		inBaselineMode = false;
 		inBaselineCalcMode = false;
 		btHoldActivated = false;
+		inPowerDownMode = false;
 		inAlarmMode = false;
 		lowAlarmActivated = false;
 		highAlarmActivated = false;
@@ -228,6 +258,7 @@ public class MainActivity extends Activity {
 		poweredOn = false;
 		showMax = false;
 		showIntro = true;
+		previousMode = NORMAL_MODE;
 
 		// Initialize equation variables
 		concentration = 0;
@@ -265,8 +296,9 @@ public class MainActivity extends Activity {
 		Log.d(TAG, preferences[0]);
 		
 		// Initialize timing variables
-		countdown = 4;
+		countdown = 6;
 		btCount = 0;
+		powerDownCount = 5;
 		baselineCount = 30;
 		ledTiming = 1000;
 		cycles = 0;
@@ -282,57 +314,13 @@ public class MainActivity extends Activity {
 				 * If button is pressed down
 				 */
 				if(event.getAction() == android.view.MotionEvent.ACTION_DOWN) {
-					leftPressed = true;
-					leftButton.setVisibility(View.GONE);
-					leftButtonPressed.setVisibility(View.VISIBLE);
-					
-					// Do only if connected to drone
-					if(poweredOn) {
-						// If both buttons are pressed, go to countdown mode
-						if(rightPressed == true) {
-							countdownMode();
-						}
-						// Otherwise, toggle mute button and start bluetooth count
-						else {
-							toggleMute();
-							bluetoothHoldMode();
-						}
-					}
-					else {
-						// If device is disconnected, only do bluetooth count
-						bluetoothHoldMode();
-					}
-					//Log.d(TAG, "Left button pressed\n");
+					leftButtonPressed();
 				}
 				/*
 				 * If button is released
 				 */
 				else if(event.getAction() == android.view.MotionEvent.ACTION_UP) {
-					leftPressed = false;
-					leftButton.setVisibility(View.VISIBLE);
-					leftButtonPressed.setVisibility(View.GONE);
-					
-					// Disable the bluetooth 3 second count
-					btCount = 0;
-					btHoldActivated = false;
-					
-					// Do only if connected to drone
-					if(poweredOn) {
-						// If in middle of countdown mode, go back to previous mode
-						if(inCountdownMode) {
-							// Reset countdown
-							countdown = 4;
-							
-							// Go back to previous mode
-							if(inBaselineMode) {
-								baselineMode();
-							}
-							else {
-								normalMode();
-							}
-						}
-					}
-					//Log.d(TAG, "Left button not pressed\n");
+					leftButtonReleased();
 				}
 				return true;
 			}
@@ -348,61 +336,23 @@ public class MainActivity extends Activity {
 				 * If button is pressed down
 				 */
 				if(event.getAction() == android.view.MotionEvent.ACTION_DOWN) {
-					rightPressed = true;
-					rightButton.setVisibility(View.GONE);
-					rightButtonPressed.setVisibility(View.VISIBLE);
-					
-					// Do only if connected to drone
-					if(poweredOn) {
-						// If both buttons are pressed, go to countdown mode
-						if(leftPressed == true) {
-							countdownMode();
-						}
-						// Otherwise, toggle max
-						else {
-							// Calculate baseline
-							if(inBaselineMode) {
-								baselineCalcMode();
-							}
-							else if(inBaselineCalcMode) {
-								normalMode();
-							}
-							else {
-								toggleMax();
-							}
-						}
-					}
-					//Log.d(TAG, "Right button pressed\n");
+					rightButtonPressed();
 				}
 				/*
 				 * If button is released
 				 */
 				else if(event.getAction() == android.view.MotionEvent.ACTION_UP) {
-					rightPressed = false;
-					rightButton.setVisibility(View.VISIBLE);
-					rightButtonPressed.setVisibility(View.GONE);
-					
-					// Do only if connected to drone
-					if(poweredOn) {
-						// If in middle of countdown mode, go back to previous mode
-						if(inCountdownMode) {
-							// Reset countdown
-							countdown = 4;
-							
-							// Go back to previous mode
-							if(inBaselineMode) {
-								baselineMode();
-							}
-							else {
-								normalMode();
-							}
-						}
-					}			
-					//Log.d(TAG, "Right button not pressed\n");
+					rightButtonReleased();
 				}
 				return true;
 			}
 		});
+		
+		int layout = this.getResources().getConfiguration().screenLayout &  Configuration.SCREENLAYOUT_SIZE_MASK;
+		Log.d(TAG, "Layout: " + Integer.toString(layout));
+		
+		String tag = (String)findViewById(R.id.my_activity_view).getTag();
+		Log.d(TAG, "Tag: " + tag);
 		
 		// Initialize drone variables
 		myDrone = new Drone();
@@ -413,6 +363,8 @@ public class MainActivity extends Activity {
 		startupLEDSequence();
 	}
 
+	
+	
 	@Override
 	public void onDestroy() {
 		super.onDestroy();
@@ -479,9 +431,191 @@ public class MainActivity extends Activity {
 	
 	/*************************************************************************************************
 	 *************************************************************************************************
+	 * STATE MACHINE
+	 *************************************************************************************************
+	 *************************************************************************************************/
+	
+	/**
+	 * Program flow for left button being pressed down
+	 */
+	public void leftButtonPressed() {
+		leftPressed = true;
+		leftButton.setVisibility(View.GONE);
+		leftButtonPressed.setVisibility(View.VISIBLE);
+		
+		// Do only if connected to drone
+		if(poweredOn) {
+			// If both buttons are pressed, go to countdown mode
+			if(rightPressed == true) {
+				countdownMode();
+			}
+			// Otherwise, decide what to do based on current mode
+			else {
+				if(inNormalMode) {
+					// Toggle mute button and start power down count
+					toggleMute();
+					powerDownMode();
+				}
+				else if(inCountdownMode) {
+					// N/A
+				}
+				else if(inBaselineMode) {
+					// N/A
+				}
+				else if(inBaselineCalcMode) {
+					// Cancel baseline calculation
+					normalMode();
+				}
+				else if(inPowerDownMode) {
+					// N/A
+				}
+			}
+		}
+		else {
+			// If device is disconnected, only do bluetooth count
+			bluetoothHoldMode();
+		}
+		Log.d(TAG, "Left button pressed\n");
+	}
+	
+	/**
+	 * Program flow for left button being released
+	 */
+	public void leftButtonReleased() {
+		leftPressed = false;
+		leftButton.setVisibility(View.VISIBLE);
+		leftButtonPressed.setVisibility(View.GONE);
+		
+		// Disable the bluetooth 3 second count
+		btCount = 0;
+		btHoldActivated = false;
+		btCountHandler.removeCallbacksAndMessages(null);
+		
+		powerDownCount = 5;
+		powerDownHandler.removeCallbacksAndMessages(null);
+		
+		// Do only if connected to drone
+		if(poweredOn) {
+			if(inNormalMode) {
+				// N/A
+			}
+			else if(inCountdownMode) {
+				// Reinitialize previous mode
+				countdown = 6;
+				
+				// Go back to previous mode
+				if(previousMode == NORMAL_MODE) {
+					normalMode();
+				}
+				else {
+					baselineMode();
+				}
+			}
+			else if(inBaselineMode) {
+				// N/A
+			}
+			else if(inBaselineCalcMode) {
+				// Cancel baseline calculation
+				normalMode();
+			}
+			else if(inPowerDownMode) {
+				// Reinitialize previous mode
+				powerDownCount = 5;
+				
+				// Go back to previous mode
+				if(previousMode == NORMAL_MODE) {
+					normalMode();
+				}
+				else {
+					baselineMode();
+				}
+			}
+		}
+		Log.d(TAG, "Left button not pressed\n");
+	}
+	
+	/**
+	 * Program flow for right button being pressed down
+	 */
+	public void rightButtonPressed() {
+		rightPressed = true;
+		rightButton.setVisibility(View.GONE);
+		rightButtonPressed.setVisibility(View.VISIBLE);
+		
+		// Do only if connected to drone
+		if(poweredOn) {
+			// If both buttons are pressed, go to countdown mode
+			if(leftPressed == true) {
+				countdownMode();
+			}
+			// Otherwise, toggle max
+			else {
+				if(inNormalMode) {
+					// Toggle max
+					toggleMax();
+				}
+				else if(inCountdownMode) {
+					// N/A
+				}
+				else if(inBaselineMode) {
+					baselineCalcMode();
+				}
+				else if(inBaselineCalcMode) {
+					// Cancel baseline calculation
+					normalMode();
+				}
+				else if(inPowerDownMode) {
+					// N/A
+				}
+			}
+		}
+		//Log.d(TAG, "Right button pressed\n");
+	}
+	
+	/**
+	 * Program flow for right button being released
+	 */
+	public void rightButtonReleased() {
+		rightPressed = false;
+		rightButton.setVisibility(View.VISIBLE);
+		rightButtonPressed.setVisibility(View.GONE);
+		
+		// Do only if connected to drone
+		if(poweredOn) {
+			if(inNormalMode) {
+				// N/A
+			}
+			else if(inCountdownMode) {
+				// Reinitialize previous mode
+				countdown = 6;
+				
+				// Go back to previous mode
+				if(previousMode == NORMAL_MODE) {
+					normalMode();
+				}
+				else {
+					baselineMode();
+				}
+			}
+			else if(inBaselineMode) {
+				// N/A
+			}
+			else if(inBaselineCalcMode) {
+				// N/A
+			}
+			else if(inPowerDownMode) {
+				// N/A
+			}
+		}			
+		//Log.d(TAG, "Right button not pressed\n");
+	}
+	
+	/*************************************************************************************************
+	 *************************************************************************************************
 	 * HELPFUL FUNCTIONS
 	 *************************************************************************************************
 	 *************************************************************************************************/
+	
 	public void showIntroDialog() {
 
 		AlertDialog.Builder alert = new AlertDialog.Builder(this);
@@ -542,6 +676,65 @@ public class MainActivity extends Activity {
 		pStream.reset();
 	}
 	
+	public void setDisplayValue(int val) {
+		int d0 = 0;
+		int d1 = 0;
+		int d2 = 0;
+		int d3 = 0;
+		
+		if((val > 9) && (val < 100)) {
+			d1 = val/10;
+			d0 = val % 10;
+			
+			ppmValue0.setText(Integer.toString(d0));
+			ppmValue1.setText(Integer.toString(d1));
+			
+			ppmValue0.setVisibility(View.VISIBLE);
+			ppmValue1.setVisibility(View.VISIBLE);
+			ppmValue2.setVisibility(View.GONE);
+			ppmValue3.setVisibility(View.GONE);
+		}
+		else if((val > 99) && (val < 999)) {
+			d2 = val / 100;
+			d1 = (val % 100)/10;
+			d0 = val % 10;
+			
+			ppmValue0.setText(Integer.toString(d0));
+			ppmValue1.setText(Integer.toString(d1));
+			ppmValue2.setText(Integer.toString(d2));
+			
+			ppmValue0.setVisibility(View.VISIBLE);
+			ppmValue1.setVisibility(View.VISIBLE);
+			ppmValue2.setVisibility(View.VISIBLE);
+			ppmValue3.setVisibility(View.GONE);
+			
+		}
+		else if(val > 999) {
+			d3 = val / 1000;
+			d2 = (val % 1000)/100;
+			d1 = (val % 100)/10;
+			d0 = val % 10;
+			
+			ppmValue0.setText(Integer.toString(d0));
+			ppmValue1.setText(Integer.toString(d1));
+			ppmValue2.setText(Integer.toString(d2));
+			ppmValue3.setText(Integer.toString(d3));
+			
+			ppmValue0.setVisibility(View.VISIBLE);
+			ppmValue1.setVisibility(View.VISIBLE);
+			ppmValue2.setVisibility(View.VISIBLE);
+			ppmValue3.setVisibility(View.VISIBLE);
+		}
+		else {
+			ppmValue0.setText(Integer.toString(val));
+			
+			ppmValue0.setVisibility(View.VISIBLE);
+			ppmValue1.setVisibility(View.GONE);
+			ppmValue2.setVisibility(View.GONE);
+			ppmValue3.setVisibility(View.GONE);
+		}
+	}
+	
 	/**
 	 * Scans for nearby sensordrones and brings up list
 	 */
@@ -553,6 +746,7 @@ public class MainActivity extends Activity {
 	 * Actions to do when drone is disconnected
 	 */
 	public void doOnDisconnect() {
+		
 		// Shut off any sensors that are on
 		this.runOnUiThread(new Runnable() {
 
@@ -655,7 +849,7 @@ public class MainActivity extends Activity {
 	private void powerDown() {
 		poweredOn = false;
 		normalMode();
-		clearScreenAndFlags(false);
+		clearScreenAndFlags();
 	}
 	
 	/**
@@ -718,7 +912,7 @@ public class MainActivity extends Activity {
 	private void startupLEDSequence() {
 		ledsActivated = true;
 		startUpLEDSequence = true;
-		myHandler.post(LEDRunnable);
+		ledHandler.post(LEDRunnable);
 	}
 	
 	/**
@@ -729,7 +923,7 @@ public class MainActivity extends Activity {
 		
 		if(poweredOn) {
 			initNormalMode();
-			myHandler.post(displayConcentrationRunnable);
+			displayConcentrationHandler.post(displayConcentrationRunnable);
 			//myHandler.post(calculateAverageRunnable);
 		}
 		else {
@@ -746,7 +940,7 @@ public class MainActivity extends Activity {
 		Log.d(TAG, "In Countdown Mode");
 		
 		initCountdownMode();
-		myHandler.post(countdownRunnable);
+		countdownHandler.post(countdownRunnable);
 	}
 	
 	/**
@@ -756,7 +950,7 @@ public class MainActivity extends Activity {
 		Log.d(TAG, "In Baseline Mode");
 		
 		initBaselineMode();
-		myHandler.post(arrowRunnable);
+		arrowHandler.post(arrowRunnable);
 	}
 	
 	/**
@@ -766,7 +960,11 @@ public class MainActivity extends Activity {
 		Log.d(TAG, "In Calc Mode");
 		
 		initBaselineCalcMode();
-		myHandler.post(baselineCalcRunnable);
+		baselineCalcHandler.post(baselineCalcRunnable);
+	}
+	
+	public void powerDownMode() {
+		powerDownHandler.post(powerDownRunnable);
 	}
 	
 	/**
@@ -774,7 +972,7 @@ public class MainActivity extends Activity {
 	 */
 	public void bluetoothHoldMode() {	
 		btHoldActivated = true;
-		myHandler.post(btCountRunnable);
+		btCountHandler.post(btCountRunnable);
 	}
 	
 	/*************************************************************************************************
@@ -787,9 +985,11 @@ public class MainActivity extends Activity {
 	 * Sets views and flags for normal mode
 	 */
 	private void initNormalMode() {
-		clearScreenAndFlags(false);
+		clearScreenAndFlags();
 		
-		ppmValue.setVisibility(View.VISIBLE);
+		previousMode = NORMAL_MODE;
+		
+		ppmValue0.setVisibility(View.VISIBLE);
 		labelPPM.setVisibility(View.VISIBLE);
 		inNormalMode = true;
 	}
@@ -798,11 +998,11 @@ public class MainActivity extends Activity {
 	 * Sets views and flags for countdown mode
 	 */
 	private void initCountdownMode() {
-		clearScreenAndFlags(true);
+		clearScreenAndFlags();
 		
 		countdownValue.setVisibility(View.VISIBLE);
 		labelHold.setVisibility(View.VISIBLE);
-		countdown = 4;
+		countdown = 6;
 		inCountdownMode = true;
 	}
 	
@@ -810,7 +1010,9 @@ public class MainActivity extends Activity {
 	 * Sets views and flags for baseline mode
 	 */
 	private void initBaselineMode() {
-		clearScreenAndFlags(false);
+		clearScreenAndFlags();
+		
+		previousMode = BASELINE_MODE;
 		
 		labelZero.setVisibility(View.VISIBLE);
 		labelCal.setVisibility(View.VISIBLE);
@@ -821,7 +1023,7 @@ public class MainActivity extends Activity {
 	 * Sets views and flags for baseline count mode
 	 */
 	private void initBaselineCalcMode() {
-		clearScreenAndFlags(false);
+		clearScreenAndFlags();
 		
 		countdownValue.setVisibility(View.VISIBLE);
 		labelZero.setVisibility(View.VISIBLE);
@@ -830,12 +1032,25 @@ public class MainActivity extends Activity {
 	}
 	
 	/**
+	 * Sets views and flags for baseline count mode
+	 */
+	private void initPowerDownMode() {
+		clearScreenAndFlags();
+		
+		inPowerDownMode = true;
+		countdownValue.setVisibility(View.VISIBLE);
+	}
+	
+	/**
 	 * Clears all views and flags
 	 * 
 	 * @param rememberLastMode	If this is set to true, it will not clear the normal and baseline mode flags
 	 */
-	private void clearScreenAndFlags(boolean rememberLastMode) {
-		ppmValue.setVisibility(View.GONE);
+	private void clearScreenAndFlags() {
+		ppmValue0.setVisibility(View.GONE);
+		ppmValue1.setVisibility(View.GONE);
+		ppmValue2.setVisibility(View.GONE);
+		ppmValue3.setVisibility(View.GONE);
 		countdownValue.setVisibility(View.GONE);
 		labelPPM.setVisibility(View.GONE);
 		labelZero.setVisibility(View.GONE);
@@ -848,15 +1063,24 @@ public class MainActivity extends Activity {
 		rightPressed = false;
 		leftArrowOn = false;
 		rightArrowOn = false;
-		if(rememberLastMode == false) { inNormalMode = false; }
+		inNormalMode = false;
 		inCountdownMode = false;
-		if(rememberLastMode == false) { inBaselineMode = false; }
+		inBaselineMode = false;
 		inBaselineCalcMode = false;
+		inAlarmMode = false;
+		inPowerDownMode = false;
 		btHoldActivated = false;
 		lowAlarmActivated = false;
 		highAlarmActivated = false;
 		ledsActivated = false;
 		showMax = false;
+		ledHandler.removeCallbacksAndMessages(null);
+		countdownHandler.removeCallbacksAndMessages(null);
+		baselineCalcHandler.removeCallbacksAndMessages(null);
+		arrowHandler.removeCallbacksAndMessages(null);
+		btCountHandler.removeCallbacksAndMessages(null);
+		powerDownHandler.removeCallbacksAndMessages(null);
+		displayConcentrationHandler.removeCallbacksAndMessages(null);
 	}
 	
 	/*************************************************************************************************
@@ -964,7 +1188,7 @@ public class MainActivity extends Activity {
 					}
 				}
 				
-				myHandler.postDelayed(this, ledTiming);
+				ledHandler.postDelayed(this, ledTiming);
 			}
 			else {
 				disableLED(0);
@@ -987,7 +1211,7 @@ public class MainActivity extends Activity {
 				countdown--;
 				
 				if(countdown == 0) {
-					countdown = 4;
+					countdown = 6;
 					
 					if(inBaselineMode) {
 						normalMode();
@@ -998,11 +1222,11 @@ public class MainActivity extends Activity {
 					}
 				}
 				else if(inCountdownMode == false) {
-					countdown = 4;
+					countdown = 6;
 				}
 				else {
 					countdownValue.setText(Integer.toString(countdown));
-					myHandler.postDelayed(this, 1000);
+					countdownHandler.postDelayed(this, 1000);
 				}
 			}
 		}
@@ -1024,7 +1248,7 @@ public class MainActivity extends Activity {
 				}
 				
 				if(baselineCount == 0) {
-					clearScreenAndFlags(false);
+					clearScreenAndFlags();
 					labelDone.setVisibility(View.VISIBLE);
 					
 					// Calculate offset and write to file
@@ -1038,14 +1262,14 @@ public class MainActivity extends Activity {
 					blStream.writeOffset(blAverage);
 					offset = blAverage;
 					
-					myHandler.postDelayed(this, 1000);
+					baselineCalcHandler.postDelayed(this, 1000);
 				}
 				else if(inBaselineCalcMode == false) {
 					baselineCount = 30;
 				}
 				else {
 					countdownValue.setText(Integer.toString(baselineCount));
-					myHandler.postDelayed(this, 1000);
+					baselineCalcHandler.postDelayed(this, 1000);
 				}
 			}
 			else {
@@ -1072,7 +1296,7 @@ public class MainActivity extends Activity {
 						rightArrowOn = false;
 					}
 					
-					myHandler.postDelayed(this,500);
+					arrowHandler.postDelayed(this,500);
 				}
 			}
 		}		
@@ -1091,20 +1315,57 @@ public class MainActivity extends Activity {
 				if(btCount == 3) {
 					btCount = 0;
 					btHoldActivated = false;
-					
-					if(poweredOn) {
-						doOnDisconnect();
-					}
-					else {
-						scan();
-					}
+					scan();
 				}
 				else {
-					myHandler.postDelayed(this, 1000);
+					
+					btCountHandler.postDelayed(this, 1000);
 				}
 			}
 			else {
 				btCount = 0;
+			}
+		}
+	};
+	
+	/*
+	 * Controls timing thread for bluetooth count
+	 */
+	public Runnable powerDownRunnable = new Runnable() {
+
+		@Override
+		public void run() {
+					
+			Log.d(TAG, "power count: " + Integer.toString(powerDownCount));
+			
+			if(inPowerDownMode) {
+				powerDownCount--;
+				
+				if(powerDownCount == 0) {
+					powerDownCount = 5;
+					inPowerDownMode = false;
+					powerDown();		
+				}
+				else {
+					countdownValue.setText(Integer.toString(powerDownCount));
+					powerDownHandler.postDelayed(this, 1000);
+				}
+			}
+			else {
+				if(leftPressed && !inPowerDownMode) {
+					powerDownCount--;
+						
+					if(powerDownCount == 3) {
+						Log.d(TAG, "reached power mode");
+						initPowerDownMode();
+						countdownValue.setText(Integer.toString(powerDownCount));
+					}
+					
+					powerDownHandler.postDelayed(this, 1000);
+				}
+				else {
+					powerDownCount = 5;
+				}
 			}
 		}
 	};
@@ -1117,7 +1378,7 @@ public class MainActivity extends Activity {
 		@Override
 		public void run() {
 			
-			if(inNormalMode && poweredOn && !inCountdownMode) {
+			if(inNormalMode && poweredOn) {
 				
 				if((concentration >= LOW_ALARM_THRESHOLD) && (concentration < HIGH_ALARM_THRESHOLD)  ) {
 					
@@ -1126,7 +1387,7 @@ public class MainActivity extends Activity {
 						highAlarmActivated = false;
 						ledsActivated = true;
 						if(inAlarmMode == false) {
-							myHandler.post(LEDRunnable);
+							displayConcentrationHandler.post(LEDRunnable);
 						}
 						
 						inAlarmMode = true;
@@ -1152,13 +1413,13 @@ public class MainActivity extends Activity {
 				}
 				
 				if(showMax == true) {
-					ppmValue.setText(Integer.toString(max));
+					setDisplayValue(max);
 				}
 				else {
-					ppmValue.setText(Integer.toString(concentration));
+					setDisplayValue(concentration);
 				}
 					
-				myHandler.postDelayed(this, 1000);
+				displayConcentrationHandler.postDelayed(this, 1000);
 			}
 		}
 	};
@@ -1298,13 +1559,8 @@ public class MainActivity extends Activity {
 
 				@Override
 				public void precisionGasMeasured(EventObject arg0) {
-					if(inNormalMode && poweredOn && !inCountdownMode) {
-						concentration = (int)myDrone.precisionGas_ppmCarbonMonoxide;
-						
-						
-					}
-					else {
-						concentration = 0;
+					if(inNormalMode && poweredOn) {
+						concentration = (int)myDrone.precisionGas_ppmCarbonMonoxide;	
 					}
 					
 					streamer.streamHandler.postDelayed(streamer, 100);

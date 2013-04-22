@@ -1,0 +1,353 @@
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/black"
+    android:paddingBottom="@dimen/activity_vertical_margin"
+    android:paddingLeft="@dimen/activity_horizontal_margin"
+    android:paddingRight="@dimen/activity_horizontal_margin"
+    android:paddingTop="@dimen/activity_vertical_margin"
+    tools:context=".MainActivity"
+    android:id="@+id/my_activity_view"
+    android:tag="normal" >
+
+    <ImageView
+        android:id="@+id/lcdScreen"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentTop="true"
+        android:layout_centerHorizontal="true"
+        android:layout_marginTop="80dp"
+        android:adjustViewBounds="true"  
+	    android:maxWidth="270dp"    
+	    android:scaleType="fitCenter"  
+        android:src="@drawable/lcd" />
+
+    <ImageView
+        android:id="@+id/logoSensorcon"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignLeft="@+id/lcdScreen"
+        android:layout_alignParentTop="true"
+        android:layout_marginTop="5dp"
+        android:adjustViewBounds="true"  
+	    android:maxWidth="115dp"    
+	    android:scaleType="fitCenter"  
+        android:src="@drawable/sensorconlogo" />
+
+    <ImageView
+        android:id="@+id/labelInspector"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignRight="@+id/lcdScreen"
+        android:layout_alignTop="@+id/logoSensorcon"
+        android:adjustViewBounds="true"  
+	    android:maxWidth="100dp"    
+	    android:scaleType="fitCenter"
+        android:src="@drawable/inspector_label" />
+    
+    <ImageView
+        android:id="@+id/ledTopLeft_off"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignLeft="@+id/lcdScreen"
+		android:layout_alignBottom="@+id/lcdScreen"
+        android:adjustViewBounds="true"  
+	    android:maxWidth="30dp"    
+	    android:scaleType="fitCenter"
+	    android:layout_marginBottom="150dp" 
+        android:src="@drawable/led_off" />
+    
+      <ImageView
+        android:id="@+id/ledTopLeft_on"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignLeft="@+id/ledTopLeft_off"
+        android:layout_alignTop="@+id/ledTopLeft_off"
+         android:adjustViewBounds="true"  
+	    android:maxWidth="30dp"    
+	    android:scaleType="fitCenter" 
+        android:src="@drawable/led_on" />
+
+    <ImageView
+        android:id="@+id/ledTopRight_off"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignRight="@+id/lcdScreen"
+        android:layout_alignTop="@+id/ledTopLeft_off"
+        android:adjustViewBounds="true"  
+	    android:maxWidth="30dp"    
+	    android:scaleType="fitCenter" 
+        android:src="@drawable/led_off" />
+    
+    <ImageView
+        android:id="@+id/ledTopRight_on"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignLeft="@+id/ledTopRight_off"
+        android:layout_alignTop="@+id/ledTopRight_off"
+         android:adjustViewBounds="true"  
+	    android:maxWidth="30dp"    
+	    android:scaleType="fitCenter" 
+        android:src="@drawable/led_on" />
+
+    <ImageView
+        android:id="@+id/ledBottomLeft_off"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignLeft="@+id/lcdScreen"
+        android:layout_alignTop="@+id/lcdScreen"
+		android:layout_marginTop="150dp"
+        android:adjustViewBounds="true"  
+	    android:maxWidth="30dp"    
+	    android:scaleType="fitCenter" 
+        android:src="@drawable/led_off" />
+    
+    <ImageView
+        android:id="@+id/ledBottomLeft_on"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignLeft="@+id/ledBottomLeft_off"
+        android:layout_alignTop="@+id/ledBottomLeft_off"
+        android:adjustViewBounds="true"  
+	    android:maxWidth="30dp"    
+	    android:scaleType="fitCenter" 
+        android:src="@drawable/led_on" />
+    
+     <ImageView
+        android:id="@+id/ledBottomRight_off"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignTop="@+id/ledBottomLeft_off"
+        android:layout_alignRight="@+id/lcdScreen"
+        android:adjustViewBounds="true"  
+	    android:maxWidth="30dp"    
+	    android:scaleType="fitCenter"
+        android:src="@drawable/led_off" />
+
+    <ImageView
+        android:id="@+id/ledBottomRight_on"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignLeft="@+id/ledBottomRight_off"
+        android:layout_alignTop="@+id/ledBottomRight_off"
+         android:adjustViewBounds="true"  
+	    android:maxWidth="30dp"    
+	    android:scaleType="fitCenter"
+        android:src="@drawable/led_on" />
+
+    <ImageView
+        android:id="@+id/labelMute"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignLeft="@+id/lcdScreen"
+        android:layout_alignBottom="@+id/ledBottomRight_off"
+        android:layout_marginLeft="45dp"
+        android:adjustViewBounds="true"  
+	    android:maxWidth="50dp"    
+	    android:scaleType="fitCenter" 
+        android:src="@drawable/mute_label" />
+
+    <ImageView
+        android:id="@+id/labelMax"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignRight="@+id/lcdScreen"
+        android:layout_alignTop="@+id/labelMute"
+        android:layout_marginRight="45dp"
+        android:adjustViewBounds="true"  
+	    android:maxWidth="43dp"    
+	    android:scaleType="fitCenter" 
+        android:src="@drawable/max_label" />
+    
+     <ImageButton
+        android:id="@+id/buttonLeft_unpressed"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignLeft="@+id/lcdScreen"
+        android:layout_alignTop="@+id/ledBottomLeft_off"
+        android:layout_marginTop="60dp"
+        android:layout_marginLeft="10dp"
+        android:adjustViewBounds="true"  
+		android:maxWidth="84dp"  
+		android:scaleType="fitCenter"  
+        android:src="@drawable/button_left"
+        android:background="@null" />
+    
+    <ImageButton
+        android:id="@+id/buttonLeft_pressed"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignLeft="@+id/lcdScreen"
+        android:layout_alignTop="@+id/ledBottomLeft_off"
+        android:layout_marginTop="60dp"
+        android:layout_marginLeft="10dp"
+        android:adjustViewBounds="true"  
+		android:maxWidth="84dp"  
+		android:scaleType="fitCenter" 
+        android:background="@null"
+        android:src="@drawable/button_left_pressed" />
+
+    <ImageButton
+        android:id="@+id/buttonRight_unpressed"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignRight="@+id/lcdScreen"
+        android:layout_alignTop="@+id/ledBottomLeft_off"
+        android:layout_marginTop="60dp"
+        android:layout_marginRight="10dp"
+        android:adjustViewBounds="true"  
+		android:maxWidth="84dp"  
+		android:scaleType="fitCenter"
+        android:background="@null"
+        android:src="@drawable/button_right" />
+    
+     <ImageButton
+        android:id="@+id/buttonRight_pressed"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignRight="@+id/lcdScreen"
+        android:layout_alignTop="@+id/ledBottomLeft_off"
+        android:layout_marginTop="60dp"
+        android:layout_marginRight="10dp"
+        android:adjustViewBounds="true"  
+		android:maxWidth="84dp"  
+		android:scaleType="fitCenter"
+        android:src="@drawable/button_right_pressed"
+        android:background="@null" />
+    
+    <ImageView
+        android:id="@+id/labelCarbonMonoxide"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentBottom="true"
+        android:layout_centerHorizontal="true"
+        android:layout_marginBottom="15dp"
+        android:adjustViewBounds="true"  
+	    android:maxWidth="200dp"    
+	    android:scaleType="fitCenter" 
+        android:src="@drawable/carbonmonoxide_label" />
+    
+    <ImageView
+        android:id="@+id/logoSensorconGray"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+       android:layout_centerHorizontal="true"
+       android:layout_alignTop="@+id/lcdScreen"
+        android:layout_marginTop="30dp"
+        android:adjustViewBounds="true"  
+	    android:maxWidth="150dp"    
+	    android:scaleType="fitCenter"
+        android:src="@drawable/sensorconlogo_gray" />
+
+    <ImageView
+        android:id="@+id/labelInspectorGray"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignBottom="@+id/lcdScreen"
+        android:layout_centerHorizontal="true"
+        android:layout_marginBottom="30dp"
+        android:adjustViewBounds="true"  
+	    android:maxWidth="130dp"    
+	    android:scaleType="fitCenter"
+        android:src="@drawable/inspector_label_gray" />
+
+    <TextView
+        android:id="@+id/ppmValue"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignBottom="@+id/lcdScreen"
+        android:layout_alignRight="@+id/lcdScreen"
+        android:layout_marginBottom="25dp"
+        android:layout_marginRight="50dp"
+        android:text="0"
+        android:textSize="120px" />
+
+    <TextView
+        android:id="@+id/labelPPM"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignBottom="@+id/ppmValue"
+        android:layout_alignRight="@+id/lcdScreen"
+        android:layout_marginRight="18dp"
+        android:text="PPM"
+        android:textSize="20px" />
+
+    <TextView
+        android:id="@+id/countdownValue"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_centerHorizontal="true"
+        android:layout_alignBottom="@+id/lcdScreen"
+		android:layout_marginBottom="25dp"
+        android:text="0"
+        android:textSize="120px" />
+
+    <TextView
+        android:id="@+id/labelHold"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignTop="@+id/lcdScreen"
+        android:layout_centerHorizontal="true"
+        android:layout_marginTop="5dp"
+        android:text="HOLD"
+        android:textSize="20px" />
+
+    <TextView
+        android:id="@+id/labelZero"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+       	android:layout_alignBottom="@+id/lcdScreen"
+		android:layout_marginBottom="5dp"
+        android:layout_alignLeft="@+id/lcdScreen"
+        android:layout_marginLeft="10dp"
+        android:text="ZERO"
+        android:textSize="20px" />
+
+    <TextView
+        android:id="@+id/labelCal"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignBottom="@+id/lcdScreen"
+		android:layout_marginBottom="25dp"
+		android:layout_centerHorizontal="true"
+        android:text="CAL"
+        android:textSize="120px" />
+    
+      <TextView
+        android:id="@+id/labelDone"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignBottom="@+id/lcdScreen"
+		android:layout_marginBottom="25dp"
+		android:layout_centerHorizontal="true"
+        android:text="DONE"
+        android:textSize="120px" />
+
+    <ImageView
+        android:id="@+id/arrowLeft"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignBottom="@+id/lcdScreen"
+        android:layout_alignLeft="@+id/lcdScreen"
+        android:layout_marginBottom="5dp"
+        android:layout_marginLeft="58dp"
+        android:adjustViewBounds="true"  
+	    android:maxWidth="20dp"    
+	    android:scaleType="fitCenter"
+        android:src="@drawable/arrow" />
+
+    <ImageView
+        android:id="@+id/arrowRight"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignBottom="@+id/lcdScreen"
+        android:layout_alignRight="@+id/lcdScreen"
+        android:layout_marginBottom="5dp"
+        android:layout_marginRight="58dp"
+        android:adjustViewBounds="true"  
+	    android:maxWidth="20dp"    
+	    android:scaleType="fitCenter"
+        android:src="@drawable/arrow" />
+
+</RelativeLayout>
