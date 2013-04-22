@@ -136,6 +136,7 @@ public class MainActivity extends Activity {
 	public boolean btHoldActivated;
 	public boolean showMax;
 	public boolean showIntro;
+	private boolean overload;
 	private String previousMode;
 	/*
 	 * Timing variables
@@ -166,6 +167,7 @@ public class MainActivity extends Activity {
 	private TextView labelCal;
 	private TextView labelZero;
 	private TextView labelHold;
+	private TextView labelOL;
 	private ImageView arrowLeft;
 	private ImageView arrowRight;
 	private TextView labelDone;
@@ -195,6 +197,7 @@ public class MainActivity extends Activity {
 		labelPPM = (TextView)findViewById(R.id.labelPPM);
 		labelZero = (TextView)findViewById(R.id.labelZero);
 		labelHold = (TextView)findViewById(R.id.labelHold);
+		labelOL = (TextView)findViewById(R.id.labelOL);
 		countdownValue = (TextView)findViewById(R.id.countdownValue);
 		labelCal = (TextView)findViewById(R.id.labelCal);
 		labelDone = (TextView)findViewById(R.id.labelDone);
@@ -228,6 +231,7 @@ public class MainActivity extends Activity {
 		labelZero.setVisibility(View.GONE);
 		labelHold.setVisibility(View.GONE);
 		labelCal.setVisibility(View.GONE);
+		labelOL.setVisibility(View.GONE);
 		countdownValue.setVisibility(View.GONE);
 		labelDone.setVisibility(View.GONE);
 		
@@ -258,6 +262,7 @@ public class MainActivity extends Activity {
 		poweredOn = false;
 		showMax = false;
 		showIntro = true;
+		overload = false;
 		previousMode = NORMAL_MODE;
 
 		// Initialize equation variables
@@ -292,7 +297,7 @@ public class MainActivity extends Activity {
 			showIntro = false;
 		}
 		
-		Log.d(TAG, Integer.toString(offset));
+		Log.d(TAG, "Offset " + Integer.toString(offset));
 		Log.d(TAG, preferences[0]);
 		
 		// Initialize timing variables
@@ -349,10 +354,10 @@ public class MainActivity extends Activity {
 		});
 		
 		int layout = this.getResources().getConfiguration().screenLayout &  Configuration.SCREENLAYOUT_SIZE_MASK;
-		Log.d(TAG, "Layout: " + Integer.toString(layout));
+		//Log.d(TAG, "Layout: " + Integer.toString(layout));
 		
 		String tag = (String)findViewById(R.id.my_activity_view).getTag();
-		Log.d(TAG, "Tag: " + tag);
+		//Log.d(TAG, "Tag: " + tag);
 		
 		// Initialize drone variables
 		myDrone = new Drone();
@@ -475,7 +480,7 @@ public class MainActivity extends Activity {
 			// If device is disconnected, only do bluetooth count
 			bluetoothHoldMode();
 		}
-		Log.d(TAG, "Left button pressed\n");
+		//Log.d(TAG, "Left button pressed\n");
 	}
 	
 	/**
@@ -515,8 +520,7 @@ public class MainActivity extends Activity {
 				// N/A
 			}
 			else if(inBaselineCalcMode) {
-				// Cancel baseline calculation
-				normalMode();
+				// N/A
 			}
 			else if(inPowerDownMode) {
 				// Reinitialize previous mode
@@ -531,7 +535,7 @@ public class MainActivity extends Activity {
 				}
 			}
 		}
-		Log.d(TAG, "Left button not pressed\n");
+		//Log.d(TAG, "Left button not pressed\n");
 	}
 	
 	/**
@@ -561,8 +565,7 @@ public class MainActivity extends Activity {
 					baselineCalcMode();
 				}
 				else if(inBaselineCalcMode) {
-					// Cancel baseline calculation
-					normalMode();
+					// N/A
 				}
 				else if(inPowerDownMode) {
 					// N/A
@@ -619,6 +622,7 @@ public class MainActivity extends Activity {
 	public void showIntroDialog() {
 
 		AlertDialog.Builder alert = new AlertDialog.Builder(this);
+		alert.setCancelable(false);
 		alert.setTitle("Introduction").setMessage("If you are new to the Inspector app, you should read through the instructions. To access them, go to the top right menu and select Instructions.");
 		alert.setPositiveButton("Don't Show Again", new DialogInterface.OnClickListener() {
 		        public void onClick(DialogInterface dialog, int which) { 
@@ -850,6 +854,7 @@ public class MainActivity extends Activity {
 		poweredOn = false;
 		normalMode();
 		clearScreenAndFlags();
+		doOnDisconnect();
 	}
 	
 	/**
@@ -1059,6 +1064,11 @@ public class MainActivity extends Activity {
 		arrowLeft.setVisibility(View.GONE);
 		arrowRight.setVisibility(View.GONE);
 		labelDone.setVisibility(View.GONE);
+		labelOL.setVisibility(View.GONE);
+		ledTopLeft_on.setVisibility(View.GONE);
+		ledTopRight_on.setVisibility(View.GONE);
+		ledBottomLeft_on.setVisibility(View.GONE);
+		ledBottomRight_on.setVisibility(View.GONE);
 		leftPressed = false;
 		rightPressed = false;
 		leftArrowOn = false;
@@ -1074,6 +1084,7 @@ public class MainActivity extends Activity {
 		highAlarmActivated = false;
 		ledsActivated = false;
 		showMax = false;
+		overload = false;
 		ledHandler.removeCallbacksAndMessages(null);
 		countdownHandler.removeCallbacksAndMessages(null);
 		baselineCalcHandler.removeCallbacksAndMessages(null);
@@ -1336,7 +1347,7 @@ public class MainActivity extends Activity {
 		@Override
 		public void run() {
 					
-			Log.d(TAG, "power count: " + Integer.toString(powerDownCount));
+			//Log.d(TAG, "power count: " + Integer.toString(powerDownCount));
 			
 			if(inPowerDownMode) {
 				powerDownCount--;
@@ -1356,7 +1367,7 @@ public class MainActivity extends Activity {
 					powerDownCount--;
 						
 					if(powerDownCount == 3) {
-						Log.d(TAG, "reached power mode");
+						//Log.d(TAG, "reached power mode");
 						initPowerDownMode();
 						countdownValue.setText(Integer.toString(powerDownCount));
 					}
@@ -1412,11 +1423,25 @@ public class MainActivity extends Activity {
 					max = concentration;
 				}
 				
-				if(showMax == true) {
-					setDisplayValue(max);
+				if(overload) {
+					labelOL.setVisibility(View.VISIBLE);
+					labelPPM.setVisibility(View.GONE);
+					ppmValue0.setVisibility(View.GONE);
+					ppmValue1.setVisibility(View.GONE);
+					ppmValue2.setVisibility(View.GONE);
+					ppmValue3.setVisibility(View.GONE);
 				}
 				else {
-					setDisplayValue(concentration);
+					if(showMax == true) {
+						setDisplayValue(max);
+					}
+					else {
+						// Reset max
+						max = 0;
+						
+						// Show current concentration
+						setDisplayValue(concentration);
+					}
 				}
 					
 				displayConcentrationHandler.postDelayed(this, 1000);
@@ -1514,7 +1539,7 @@ public class MainActivity extends Activity {
 			sensor = myDrone.QS_TYPE_PRECISION_GAS;
 			
 			// This will Blink our Drone, once a second, Blue
-			myBlinker = new ConnectionBlinker(myDrone, 1000, 0, 0, 255);
+			myBlinker = new ConnectionBlinker(myDrone, 1000, 0, 255, 0);
 			
 			streamer = new SDStreamer(myDrone, sensor);
 			
@@ -1538,7 +1563,7 @@ public class MainActivity extends Activity {
 					myDrone.quickEnable(sensor);
 					
 					// Flash teh LEDs green
-					myHelper.flashLEDs(myDrone, 3, 100, 0, 255, 0);
+					myHelper.flashLEDs(myDrone, 3, 100, 0, 0, 22);
 					// Turn on our blinker
 					myBlinker.enable();
 					myBlinker.run();
@@ -1560,7 +1585,15 @@ public class MainActivity extends Activity {
 				@Override
 				public void precisionGasMeasured(EventObject arg0) {
 					if(inNormalMode && poweredOn) {
-						concentration = (int)myDrone.precisionGas_ppmCarbonMonoxide;	
+						concentration = (int)myDrone.precisionGas_ppmCarbonMonoxide - offset;
+						
+						if(concentration < 0) {
+							concentration = 0;
+						}
+						
+						if(concentration > 1999) {
+							overload = true;
+						}
 					}
 					
 					streamer.streamHandler.postDelayed(streamer, 100);
