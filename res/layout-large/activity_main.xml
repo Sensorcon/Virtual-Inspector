@@ -180,7 +180,7 @@
         android:layout_height="wrap_content"
         android:layout_centerHorizontal="true"
         android:layout_alignTop="@+id/lcdScreen"
-        android:layout_marginTop="50dp"
+        android:layout_marginTop="40dp"
         android:src="@drawable/sensorconlogo_gray" />
 
     <ImageView
@@ -189,7 +189,7 @@
         android:layout_height="wrap_content"
         android:layout_alignBottom="@+id/lcdScreen"
         android:layout_centerHorizontal="true"
-        android:layout_marginBottom="50dp"
+        android:layout_marginBottom="40dp"
         android:src="@drawable/inspector_label_gray" />
 
     <TextView
@@ -198,7 +198,7 @@
         android:layout_height="wrap_content"
         android:layout_alignBottom="@+id/lcdScreen"
         android:layout_alignRight="@+id/lcdScreen"
-        android:layout_marginBottom="25dp"
+        android:layout_marginBottom="45dp"
         android:layout_marginRight="80dp"
         android:text="0"
         android:textSize="240px" />
@@ -209,7 +209,7 @@
         android:layout_height="wrap_content"
         android:layout_alignBottom="@+id/lcdScreen"
         android:layout_alignRight="@+id/lcdScreen"
-        android:layout_marginBottom="25dp"
+        android:layout_marginBottom="45dp"
         android:layout_marginRight="180dp"
         android:text="0"
         android:textSize="240px" />
@@ -220,7 +220,7 @@
         android:layout_height="wrap_content"
         android:layout_alignBottom="@+id/lcdScreen"
         android:layout_alignRight="@+id/lcdScreen"
-        android:layout_marginBottom="25dp"
+        android:layout_marginBottom="45dp"
         android:layout_marginRight="280dp"
         android:text="0"
         android:textSize="240px" />
@@ -231,7 +231,7 @@
         android:layout_height="wrap_content"
         android:layout_alignBottom="@+id/lcdScreen"
         android:layout_alignRight="@+id/lcdScreen"
-        android:layout_marginBottom="25dp"
+        android:layout_marginBottom="45dp"
         android:layout_marginRight="380dp"
         android:text="0"
         android:textSize="240px" />
@@ -240,9 +240,10 @@
         android:id="@+id/labelPPM"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_alignBottom="@+id/ppmValue0"
+        android:layout_alignBottom="@+id/lcdScreen"
         android:layout_alignRight="@+id/lcdScreen"
-        android:layout_marginRight="18dp"
+        android:layout_marginRight="15dp"
+        android:layout_marginBottom="45dp"
         android:text="PPM"
         android:textSize="40px" />
 
@@ -252,7 +253,7 @@
         android:layout_height="wrap_content"
         android:layout_centerHorizontal="true"
         android:layout_alignBottom="@+id/lcdScreen"
-		android:layout_marginBottom="25dp"
+		android:layout_marginBottom="45dp"
         android:text="0"
         android:textSize="240px" />
 
@@ -282,9 +283,19 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_alignBottom="@+id/lcdScreen"
-		android:layout_marginBottom="25dp"
+		android:layout_marginBottom="45dp"
 		android:layout_centerHorizontal="true"
         android:text="CAL"
+        android:textSize="240px" />
+    
+     <TextView
+        android:id="@+id/labelNo"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignBottom="@+id/lcdScreen"
+        android:layout_marginBottom="45dp"
+        android:layout_centerHorizontal="true"
+        android:text="no"
         android:textSize="240px" />
     
       <TextView
@@ -292,7 +303,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_alignBottom="@+id/lcdScreen"
-		android:layout_marginBottom="25dp"
+		android:layout_marginBottom="45dp"
 		android:layout_centerHorizontal="true"
         android:text="DONE"
         android:textSize="240px" />
@@ -302,7 +313,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_alignBottom="@+id/lcdScreen"
-		android:layout_marginBottom="25dp"
+		android:layout_marginBottom="45dp"
 		android:layout_centerHorizontal="true"
         android:text="OL"
         android:textSize="240px" />

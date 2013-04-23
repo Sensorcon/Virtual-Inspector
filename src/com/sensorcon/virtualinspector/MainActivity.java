@@ -62,10 +62,10 @@ public class MainActivity extends Activity {
 	private final String NORMAL_MODE = "NORMAL";
 	private final String BASELINE_MODE = "BASELINE";
 	private final int MAX_MEASUREMENTS = 10;
-	private final int LOW_ALARM_THRESHOLD = 15;
+	private final int LOW_ALARM_THRESHOLD = 35;
 	private final int HIGH_ALARM_THRESHOLD = 200;
 	private final int LOW_ALARM_TIMING = 1000;
-	private final int HIGH_ALARM_TIMING = 500;
+	private final int HIGH_ALARM_TIMING = 250;
 	/*
 	 * Measurement variables
 	 */
@@ -102,6 +102,7 @@ public class MainActivity extends Activity {
 	private Handler btCountHandler = new Handler();
 	private Handler powerDownHandler = new Handler();
 	private Handler displayConcentrationHandler = new Handler();
+	private Handler cancelCalHandler = new Handler();
 	/*
 	 * Contains functions to simplify connectivity
 	 */
@@ -127,6 +128,7 @@ public class MainActivity extends Activity {
 	public boolean inBaselineCalcMode;
 	public boolean inPowerDownMode;
 	public boolean inAlarmMode;
+	public boolean inCancelCalMode;
 	public boolean lowAlarmActivated;
 	public boolean highAlarmActivated;
 	public boolean ledsActivated;
@@ -136,7 +138,6 @@ public class MainActivity extends Activity {
 	public boolean btHoldActivated;
 	public boolean showMax;
 	public boolean showIntro;
-	private boolean overload;
 	private String previousMode;
 	/*
 	 * Timing variables
@@ -145,6 +146,7 @@ public class MainActivity extends Activity {
 	private int btCount;
 	private int powerDownCount;
 	private int baselineCount;
+	private int cancelCalCount;
 	/*
 	 * Accessable view variables from GUI
 	 */
@@ -165,6 +167,7 @@ public class MainActivity extends Activity {
 	private ImageButton leftButtonPressed;
 	private ImageButton rightButtonPressed;
 	private TextView labelCal;
+	private TextView labelNo;
 	private TextView labelZero;
 	private TextView labelHold;
 	private TextView labelOL;
@@ -200,6 +203,7 @@ public class MainActivity extends Activity {
 		labelOL = (TextView)findViewById(R.id.labelOL);
 		countdownValue = (TextView)findViewById(R.id.countdownValue);
 		labelCal = (TextView)findViewById(R.id.labelCal);
+		labelNo = (TextView)findViewById(R.id.labelNo);
 		labelDone = (TextView)findViewById(R.id.labelDone);
 		
 		// Set LED font
@@ -210,7 +214,9 @@ public class MainActivity extends Activity {
 		ppmValue3.setTypeface(lcdFont);	
 		countdownValue.setTypeface(lcdFont);	
 		labelCal.setTypeface(lcdFont);
+		labelNo.setTypeface(lcdFont);
 		labelDone.setTypeface(lcdFont);
+		labelOL.setTypeface(lcdFont);
 
 		// Make certain view invisible 
 		leftButtonPressed.setVisibility(View.GONE);
@@ -231,6 +237,7 @@ public class MainActivity extends Activity {
 		labelZero.setVisibility(View.GONE);
 		labelHold.setVisibility(View.GONE);
 		labelCal.setVisibility(View.GONE);
+		labelNo.setVisibility(View.GONE);
 		labelOL.setVisibility(View.GONE);
 		countdownValue.setVisibility(View.GONE);
 		labelDone.setVisibility(View.GONE);
@@ -256,13 +263,13 @@ public class MainActivity extends Activity {
 		btHoldActivated = false;
 		inPowerDownMode = false;
 		inAlarmMode = false;
+		inCancelCalMode = false;
 		lowAlarmActivated = false;
 		highAlarmActivated = false;
 		ledsActivated = false;
 		poweredOn = false;
 		showMax = false;
 		showIntro = true;
-		overload = false;
 		previousMode = NORMAL_MODE;
 
 		// Initialize equation variables
@@ -304,10 +311,11 @@ public class MainActivity extends Activity {
 		countdown = 6;
 		btCount = 0;
 		powerDownCount = 5;
-		baselineCount = 30;
+		baselineCount = 31;
 		ledTiming = 1000;
 		cycles = 0;
 		count = 0;
+		cancelCalCount = 3;
 		
 		/*
 		 * Controls the program flow for when the left button is pressed/released
@@ -465,11 +473,15 @@ public class MainActivity extends Activity {
 					// N/A
 				}
 				else if(inBaselineMode) {
+					// Go back to normal mode
+					cancelCalMode();
+				}
+				else if(inCancelCalMode) {
 					// N/A
 				}
 				else if(inBaselineCalcMode) {
-					// Cancel baseline calculation
-					normalMode();
+					// Go back to normal mode
+					cancelCalMode();
 				}
 				else if(inPowerDownMode) {
 					// N/A
@@ -508,18 +520,16 @@ public class MainActivity extends Activity {
 				// Reinitialize previous mode
 				countdown = 6;
 				
-				// Go back to previous mode
-				if(previousMode == NORMAL_MODE) {
-					normalMode();
-				}
-				else {
-					baselineMode();
-				}
+				// Go back to normal mode
+				normalMode();
 			}
 			else if(inBaselineMode) {
 				// N/A
 			}
 			else if(inBaselineCalcMode) {
+				// N/A
+			}
+			else if(inCancelCalMode) {
 				// N/A
 			}
 			else if(inPowerDownMode) {
@@ -564,6 +574,9 @@ public class MainActivity extends Activity {
 				else if(inBaselineMode) {
 					baselineCalcMode();
 				}
+				else if(inCancelCalMode) {
+					// N/A
+				}
 				else if(inBaselineCalcMode) {
 					// N/A
 				}
@@ -592,15 +605,13 @@ public class MainActivity extends Activity {
 				// Reinitialize previous mode
 				countdown = 6;
 				
-				// Go back to previous mode
-				if(previousMode == NORMAL_MODE) {
-					normalMode();
-				}
-				else {
-					baselineMode();
-				}
+				// Go back to normal mode
+				normalMode();
 			}
 			else if(inBaselineMode) {
+				// N/A
+			}
+			else if(inCancelCalMode) {
 				// N/A
 			}
 			else if(inBaselineCalcMode) {
@@ -697,6 +708,7 @@ public class MainActivity extends Activity {
 			ppmValue1.setVisibility(View.VISIBLE);
 			ppmValue2.setVisibility(View.GONE);
 			ppmValue3.setVisibility(View.GONE);
+			labelOL.setVisibility(View.GONE);
 		}
 		else if((val > 99) && (val < 999)) {
 			d2 = val / 100;
@@ -711,9 +723,10 @@ public class MainActivity extends Activity {
 			ppmValue1.setVisibility(View.VISIBLE);
 			ppmValue2.setVisibility(View.VISIBLE);
 			ppmValue3.setVisibility(View.GONE);
+			labelOL.setVisibility(View.GONE);
 			
 		}
-		else if(val > 999) {
+		else if((val > 999) && (val < 2000)) {
 			d3 = val / 1000;
 			d2 = (val % 1000)/100;
 			d1 = (val % 100)/10;
@@ -728,6 +741,14 @@ public class MainActivity extends Activity {
 			ppmValue1.setVisibility(View.VISIBLE);
 			ppmValue2.setVisibility(View.VISIBLE);
 			ppmValue3.setVisibility(View.VISIBLE);
+			labelOL.setVisibility(View.GONE);
+		}
+		else if(val > 1999) {
+			ppmValue0.setVisibility(View.GONE);
+			ppmValue1.setVisibility(View.GONE);
+			ppmValue2.setVisibility(View.GONE);
+			ppmValue3.setVisibility(View.GONE);
+			labelOL.setVisibility(View.VISIBLE);
 		}
 		else {
 			ppmValue0.setText(Integer.toString(val));
@@ -736,6 +757,7 @@ public class MainActivity extends Activity {
 			ppmValue1.setVisibility(View.GONE);
 			ppmValue2.setVisibility(View.GONE);
 			ppmValue3.setVisibility(View.GONE);
+			labelOL.setVisibility(View.GONE);
 		}
 	}
 	
@@ -968,6 +990,13 @@ public class MainActivity extends Activity {
 		baselineCalcHandler.post(baselineCalcRunnable);
 	}
 	
+	public void cancelCalMode() {
+		Log.d(TAG, "Cancel cal mode");
+		
+		initCancelCalMode();
+		cancelCalHandler.post(cancelCalRunnable);
+	}
+	
 	public void powerDownMode() {
 		powerDownHandler.post(powerDownRunnable);
 	}
@@ -1032,7 +1061,7 @@ public class MainActivity extends Activity {
 		
 		countdownValue.setVisibility(View.VISIBLE);
 		labelZero.setVisibility(View.VISIBLE);
-		baselineCount = 30;
+		baselineCount = 31;
 		inBaselineCalcMode = true;
 	}
 	
@@ -1044,6 +1073,13 @@ public class MainActivity extends Activity {
 		
 		inPowerDownMode = true;
 		countdownValue.setVisibility(View.VISIBLE);
+	}
+	
+	private void initCancelCalMode() {
+		clearScreenAndFlags();
+		
+		inCancelCalMode = true;
+		labelZero.setVisibility(View.VISIBLE);
 	}
 	
 	/**
@@ -1077,6 +1113,7 @@ public class MainActivity extends Activity {
 		inCountdownMode = false;
 		inBaselineMode = false;
 		inBaselineCalcMode = false;
+		inCancelCalMode = false;
 		inAlarmMode = false;
 		inPowerDownMode = false;
 		btHoldActivated = false;
@@ -1084,10 +1121,10 @@ public class MainActivity extends Activity {
 		highAlarmActivated = false;
 		ledsActivated = false;
 		showMax = false;
-		overload = false;
 		ledHandler.removeCallbacksAndMessages(null);
 		countdownHandler.removeCallbacksAndMessages(null);
 		baselineCalcHandler.removeCallbacksAndMessages(null);
+		cancelCalHandler.removeCallbacksAndMessages(null);
 		arrowHandler.removeCallbacksAndMessages(null);
 		btCountHandler.removeCallbacksAndMessages(null);
 		powerDownHandler.removeCallbacksAndMessages(null);
@@ -1164,6 +1201,7 @@ public class MainActivity extends Activity {
 					if(leftArrowOn == false) {
 						if(lowAlarmActivated || highAlarmActivated) {
 							beep();
+							myHelper.flashLEDs(myDrone, 2, 125, 255, 0, 0);
 						}
 					}
 				}
@@ -1276,7 +1314,7 @@ public class MainActivity extends Activity {
 					baselineCalcHandler.postDelayed(this, 1000);
 				}
 				else if(inBaselineCalcMode == false) {
-					baselineCount = 30;
+					baselineCount = 31;
 				}
 				else {
 					countdownValue.setText(Integer.toString(baselineCount));
@@ -1285,6 +1323,36 @@ public class MainActivity extends Activity {
 			}
 			else {
 				normalMode();
+			}
+		}
+	};
+	
+	/*
+	 * Controls timing thread for canceling calibration
+	 */
+	public Runnable cancelCalRunnable = new Runnable() {
+
+		@Override
+		public void run() {
+			if(inCancelCalMode) {
+				cancelCalCount--;
+				
+				if(cancelCalCount == 2) {
+					labelNo.setVisibility(View.VISIBLE);
+				}
+				else if(cancelCalCount == 1) {
+					labelNo.setVisibility(View.GONE);
+					labelCal.setVisibility(View.VISIBLE);
+				}
+				else if(cancelCalCount == 0) {
+					cancelCalCount = 3;
+					normalMode();
+				}
+				
+				cancelCalHandler.postDelayed(this, 1000);
+			}
+			else {
+				cancelCalCount = 3;
 			}
 		}
 	};
@@ -1397,11 +1465,14 @@ public class MainActivity extends Activity {
 						lowAlarmActivated = true;
 						highAlarmActivated = false;
 						ledsActivated = true;
+
+						// Leds on drone
+						box.myBlinker.disable();
+					
 						if(inAlarmMode == false) {
 							displayConcentrationHandler.post(LEDRunnable);
+							inAlarmMode = true;
 						}
-						
-						inAlarmMode = true;
 					}
 				}
 				else if(concentration >= HIGH_ALARM_THRESHOLD) {
@@ -1409,39 +1480,51 @@ public class MainActivity extends Activity {
 						lowAlarmActivated = false;
 						highAlarmActivated = true;
 						ledsActivated = true;
+						
+						// Leds on drone
+						box.myBlinker.disable();
+				
+						if(inAlarmMode == false) {
+							displayConcentrationHandler.post(LEDRunnable);
+							inAlarmMode = true;
+						}
 					}
 				}
 				else {
-					ledsActivated = false;
-					lowAlarmActivated = false;
-					highAlarmActivated = false;
-					inAlarmMode = false;
+					if(inAlarmMode == true) {
+						ledsActivated = false;
+						lowAlarmActivated = false;
+						highAlarmActivated = false;
+					
+						inAlarmMode = false;
+						ledHandler.removeCallbacksAndMessages(null);
+					
+						// Make sure all LEDs off
+						ledTopLeft_on.setVisibility(View.GONE);
+						ledTopRight_on.setVisibility(View.GONE);
+						ledBottomLeft_on.setVisibility(View.GONE);
+						ledBottomRight_on.setVisibility(View.GONE);
+						
+						// Leds on drone
+						box.myBlinker.enable();
+						box.myBlinker.run();
+					}
 				}
 				
 				// Check for new max
 				if(concentration > max) {
 					max = concentration;
 				}
-				
-				if(overload) {
-					labelOL.setVisibility(View.VISIBLE);
-					labelPPM.setVisibility(View.GONE);
-					ppmValue0.setVisibility(View.GONE);
-					ppmValue1.setVisibility(View.GONE);
-					ppmValue2.setVisibility(View.GONE);
-					ppmValue3.setVisibility(View.GONE);
+
+				if(showMax == true) {
+					setDisplayValue(max);
 				}
 				else {
-					if(showMax == true) {
-						setDisplayValue(max);
-					}
-					else {
-						// Reset max
-						max = 0;
-						
-						// Show current concentration
-						setDisplayValue(concentration);
-					}
+					// Reset max
+					max = 0;
+					
+					// Show current concentration
+					setDisplayValue(concentration);
 				}
 					
 				displayConcentrationHandler.postDelayed(this, 1000);
@@ -1589,10 +1672,6 @@ public class MainActivity extends Activity {
 						
 						if(concentration < 0) {
 							concentration = 0;
-						}
-						
-						if(concentration > 1999) {
-							overload = true;
 						}
 					}
 					
