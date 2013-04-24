@@ -28,7 +28,7 @@ public class PreferencesStream {
 	private File file;
 	
 	/**
-	 * Initializes file to save baseline
+	 * Initializes file to store preferences
 	 * 
 	 * @param context
 	 */
@@ -49,7 +49,7 @@ public class PreferencesStream {
 	}
 	
 	/**
-	 * Writes offset to file
+	 * Disables dialog
 	 * 
 	 * @param offset
 	 */
@@ -64,9 +64,9 @@ public class PreferencesStream {
 	}
 	
 	/**
-	 * Reads offset from file
+	 * Reads preferences
 	 * 
-	 * @return offset
+	 * @return preferences
 	 */
 	public String[] readPreferences() {
 		String[] data = new String[1];
@@ -96,7 +96,7 @@ public class PreferencesStream {
 	}
 	
 	/**
-	 * Deletes the file where baseline is stored
+	 * Deletes the file where preferences are stored
 	 */
 	public void reset() {
 		file.delete();

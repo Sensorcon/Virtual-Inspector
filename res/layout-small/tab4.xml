@@ -13,7 +13,7 @@
         android:layout_above="@+id/imageView1"
         android:layout_marginBottom="25dp"
         android:text="@string/tab4_string"
-        android:textSize="12dp" />
+        android:textSize="10dp" />
 
     <ImageView
         android:id="@+id/imageView1"
@@ -21,7 +21,7 @@
         android:layout_height="wrap_content"
         android:adjustViewBounds="true"  
         android:layout_marginBottom="5dp"
-	    android:maxWidth="120dp"    
+	    android:maxWidth="75dp"    
 	    android:scaleType="fitCenter"
         android:src="@drawable/inst_both_button" />
 </LinearLayout>

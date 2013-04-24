@@ -9,7 +9,7 @@
     android:paddingTop="@dimen/activity_vertical_margin"
     tools:context=".MainActivity"
     android:id="@+id/my_activity_view"
-    android:tag="normal" >
+    android:tag="large" >
 
     <ImageView
         android:id="@+id/lcdScreen"
@@ -17,10 +17,7 @@
         android:layout_height="wrap_content"
         android:layout_alignParentTop="true"
         android:layout_centerHorizontal="true"
-        android:layout_marginTop="80dp"
-        android:adjustViewBounds="true"  
-	    android:maxWidth="270dp"    
-	    android:scaleType="fitCenter"  
+        android:layout_marginTop="200dp"
         android:src="@drawable/lcd" />
 
     <ImageView
@@ -29,10 +26,8 @@
         android:layout_height="wrap_content"
         android:layout_alignLeft="@+id/lcdScreen"
         android:layout_alignParentTop="true"
-        android:layout_marginTop="5dp"
-        android:adjustViewBounds="true"  
-	    android:maxWidth="115dp"    
-	    android:scaleType="fitCenter"  
+        android:layout_marginTop="10dp"
+         android:layout_marginLeft="-60dp"
         android:src="@drawable/sensorconlogo" />
 
     <ImageView
@@ -41,9 +36,7 @@
         android:layout_height="wrap_content"
         android:layout_alignRight="@+id/lcdScreen"
         android:layout_alignTop="@+id/logoSensorcon"
-        android:adjustViewBounds="true"  
-	    android:maxWidth="100dp"    
-	    android:scaleType="fitCenter"
+        android:layout_marginRight="-60dp"
         android:src="@drawable/inspector_label" />
     
     <ImageView
@@ -52,10 +45,7 @@
         android:layout_height="wrap_content"
         android:layout_alignLeft="@+id/lcdScreen"
 		android:layout_alignBottom="@+id/lcdScreen"
-        android:adjustViewBounds="true"  
-	    android:maxWidth="30dp"    
-	    android:scaleType="fitCenter"
-	    android:layout_marginBottom="150dp" 
+	    android:layout_marginBottom="275dp" 
         android:src="@drawable/led_off" />
     
       <ImageView
@@ -64,9 +54,6 @@
         android:layout_height="wrap_content"
         android:layout_alignLeft="@+id/ledTopLeft_off"
         android:layout_alignTop="@+id/ledTopLeft_off"
-         android:adjustViewBounds="true"  
-	    android:maxWidth="30dp"    
-	    android:scaleType="fitCenter" 
         android:src="@drawable/led_on" />
 
     <ImageView
@@ -75,9 +62,6 @@
         android:layout_height="wrap_content"
         android:layout_alignRight="@+id/lcdScreen"
         android:layout_alignTop="@+id/ledTopLeft_off"
-        android:adjustViewBounds="true"  
-	    android:maxWidth="30dp"    
-	    android:scaleType="fitCenter" 
         android:src="@drawable/led_off" />
     
     <ImageView
@@ -86,9 +70,6 @@
         android:layout_height="wrap_content"
         android:layout_alignLeft="@+id/ledTopRight_off"
         android:layout_alignTop="@+id/ledTopRight_off"
-         android:adjustViewBounds="true"  
-	    android:maxWidth="30dp"    
-	    android:scaleType="fitCenter" 
         android:src="@drawable/led_on" />
 
     <ImageView
@@ -97,10 +78,7 @@
         android:layout_height="wrap_content"
         android:layout_alignLeft="@+id/lcdScreen"
         android:layout_alignTop="@+id/lcdScreen"
-		android:layout_marginTop="150dp"
-        android:adjustViewBounds="true"  
-	    android:maxWidth="30dp"    
-	    android:scaleType="fitCenter" 
+		android:layout_marginTop="275dp"
         android:src="@drawable/led_off" />
     
     <ImageView
@@ -109,9 +87,6 @@
         android:layout_height="wrap_content"
         android:layout_alignLeft="@+id/ledBottomLeft_off"
         android:layout_alignTop="@+id/ledBottomLeft_off"
-        android:adjustViewBounds="true"  
-	    android:maxWidth="30dp"    
-	    android:scaleType="fitCenter" 
         android:src="@drawable/led_on" />
     
      <ImageView
@@ -120,9 +95,6 @@
         android:layout_height="wrap_content"
         android:layout_alignTop="@+id/ledBottomLeft_off"
         android:layout_alignRight="@+id/lcdScreen"
-        android:adjustViewBounds="true"  
-	    android:maxWidth="30dp"    
-	    android:scaleType="fitCenter"
         android:src="@drawable/led_off" />
 
     <ImageView
@@ -131,9 +103,6 @@
         android:layout_height="wrap_content"
         android:layout_alignLeft="@+id/ledBottomRight_off"
         android:layout_alignTop="@+id/ledBottomRight_off"
-         android:adjustViewBounds="true"  
-	    android:maxWidth="30dp"    
-	    android:scaleType="fitCenter"
         android:src="@drawable/led_on" />
 
     <ImageView
@@ -142,10 +111,7 @@
         android:layout_height="wrap_content"
         android:layout_alignLeft="@+id/lcdScreen"
         android:layout_alignBottom="@+id/ledBottomRight_off"
-        android:layout_marginLeft="45dp"
-        android:adjustViewBounds="true"  
-	    android:maxWidth="50dp"    
-	    android:scaleType="fitCenter" 
+        android:layout_marginLeft="80dp"
         android:src="@drawable/mute_label" />
 
     <ImageView
@@ -154,10 +120,7 @@
         android:layout_height="wrap_content"
         android:layout_alignRight="@+id/lcdScreen"
         android:layout_alignTop="@+id/labelMute"
-        android:layout_marginRight="45dp"
-        android:adjustViewBounds="true"  
-	    android:maxWidth="43dp"    
-	    android:scaleType="fitCenter" 
+        android:layout_marginRight="80dp"
         android:src="@drawable/max_label" />
     
      <ImageButton
@@ -166,11 +129,8 @@
         android:layout_height="wrap_content"
         android:layout_alignLeft="@+id/lcdScreen"
         android:layout_alignTop="@+id/ledBottomLeft_off"
-        android:layout_marginTop="50dp"
-        android:layout_marginLeft="10dp"
-        android:adjustViewBounds="true"  
-		android:maxWidth="84dp"  
-		android:scaleType="fitCenter"  
+        android:layout_marginTop="150dp"
+        android:layout_marginLeft="30dp"
         android:src="@drawable/button_left"
         android:background="@null" />
     
@@ -180,11 +140,8 @@
         android:layout_height="wrap_content"
         android:layout_alignLeft="@+id/lcdScreen"
         android:layout_alignTop="@+id/ledBottomLeft_off"
-        android:layout_marginTop="50dp"
-        android:layout_marginLeft="10dp"
-        android:adjustViewBounds="true"  
-		android:maxWidth="84dp"  
-		android:scaleType="fitCenter" 
+        android:layout_marginTop="150dp"
+        android:layout_marginLeft="30dp"
         android:background="@null"
         android:src="@drawable/button_left_pressed" />
 
@@ -194,11 +151,8 @@
         android:layout_height="wrap_content"
         android:layout_alignRight="@+id/lcdScreen"
         android:layout_alignTop="@+id/ledBottomLeft_off"
-        android:layout_marginTop="50dp"
-        android:layout_marginRight="10dp"
-        android:adjustViewBounds="true"  
-		android:maxWidth="84dp"  
-		android:scaleType="fitCenter"
+        android:layout_marginTop="150dp"
+        android:layout_marginRight="30dp"
         android:background="@null"
         android:src="@drawable/button_right" />
     
@@ -208,11 +162,8 @@
         android:layout_height="wrap_content"
         android:layout_alignRight="@+id/lcdScreen"
         android:layout_alignTop="@+id/ledBottomLeft_off"
-        android:layout_marginTop="50dp"
-        android:layout_marginRight="10dp"
-        android:adjustViewBounds="true"  
-		android:maxWidth="84dp"  
-		android:scaleType="fitCenter"
+        android:layout_marginTop="150dp"
+        android:layout_marginRight="30dp"
         android:src="@drawable/button_right_pressed"
         android:background="@null" />
     
@@ -222,22 +173,16 @@
         android:layout_height="wrap_content"
         android:layout_alignParentBottom="true"
         android:layout_centerHorizontal="true"
-        android:layout_marginBottom="0dp"
-        android:adjustViewBounds="true"  
-	    android:maxWidth="200dp"    
-	    android:scaleType="fitCenter" 
+        android:layout_marginBottom="100dp"
         android:src="@drawable/carbonmonoxide_label" />
     
     <ImageView
         android:id="@+id/logoSensorconGray"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-       android:layout_centerHorizontal="true"
-       android:layout_alignTop="@+id/lcdScreen"
-        android:layout_marginTop="30dp"
-        android:adjustViewBounds="true"  
-	    android:maxWidth="150dp"    
-	    android:scaleType="fitCenter"
+        android:layout_centerHorizontal="true"
+        android:layout_alignTop="@+id/lcdScreen"
+        android:layout_marginTop="40dp"
         android:src="@drawable/sensorconlogo_gray" />
 
     <ImageView
@@ -246,10 +191,7 @@
         android:layout_height="wrap_content"
         android:layout_alignBottom="@+id/lcdScreen"
         android:layout_centerHorizontal="true"
-        android:layout_marginBottom="30dp"
-        android:adjustViewBounds="true"  
-	    android:maxWidth="130dp"    
-	    android:scaleType="fitCenter"
+        android:layout_marginBottom="40dp"
         android:src="@drawable/inspector_label_gray" />
 
     <TextView
@@ -258,10 +200,10 @@
         android:layout_height="wrap_content"
         android:layout_alignBottom="@+id/lcdScreen"
         android:layout_alignRight="@+id/lcdScreen"
-        android:layout_marginBottom="25dp"
-        android:layout_marginRight="40dp"
+        android:layout_marginBottom="20dp"
+        android:layout_marginRight="80dp"
         android:text="0"
-        android:textSize="120px" />
+        android:textSize="200dp" />
     
      <TextView
         android:id="@+id/ppmValue1"
@@ -269,10 +211,10 @@
         android:layout_height="wrap_content"
         android:layout_alignBottom="@+id/lcdScreen"
         android:layout_alignRight="@+id/lcdScreen"
-        android:layout_marginBottom="25dp"
-        android:layout_marginRight="100dp"
+        android:layout_marginBottom="20dp"
+        android:layout_marginRight="180dp"
         android:text="0"
-        android:textSize="120px" />
+        android:textSize="200dp" />
 
     <TextView
         android:id="@+id/ppmValue2"
@@ -280,10 +222,10 @@
         android:layout_height="wrap_content"
         android:layout_alignBottom="@+id/lcdScreen"
         android:layout_alignRight="@+id/lcdScreen"
-        android:layout_marginBottom="25dp"
-        android:layout_marginRight="160dp"
+        android:layout_marginBottom="20dp"
+        android:layout_marginRight="280dp"
         android:text="0"
-        android:textSize="120px" />
+        android:textSize="200dp" />
 
     <TextView
         android:id="@+id/ppmValue3"
@@ -291,10 +233,10 @@
         android:layout_height="wrap_content"
         android:layout_alignBottom="@+id/lcdScreen"
         android:layout_alignRight="@+id/lcdScreen"
-        android:layout_marginBottom="25dp"
-        android:layout_marginRight="220dp"
+        android:layout_marginBottom="20dp"
+        android:layout_marginRight="380dp"
         android:text="0"
-        android:textSize="120px" />
+        android:textSize="200dp" />
 
     <TextView
         android:id="@+id/labelPPM"
@@ -303,9 +245,9 @@
         android:layout_alignBottom="@+id/lcdScreen"
         android:layout_alignRight="@+id/lcdScreen"
         android:layout_marginRight="15dp"
-        android:layout_marginBottom="25dp"
+        android:layout_marginBottom="30dp"
         android:text="PPM"
-        android:textSize="20px" />
+        android:textSize="30dp" />
 
     <TextView
         android:id="@+id/countdownValue"
@@ -313,9 +255,9 @@
         android:layout_height="wrap_content"
         android:layout_centerHorizontal="true"
         android:layout_alignBottom="@+id/lcdScreen"
-		android:layout_marginBottom="25dp"
+		android:layout_marginBottom="20dp"
         android:text="0"
-        android:textSize="120px" />
+        android:textSize="200dp" />
 
     <TextView
         android:id="@+id/labelHold"
@@ -325,7 +267,7 @@
         android:layout_centerHorizontal="true"
         android:layout_marginTop="5dp"
         android:text="HOLD"
-        android:textSize="20px" />
+        android:textSize="30dp" />
 
     <TextView
         android:id="@+id/labelZero"
@@ -336,47 +278,47 @@
         android:layout_alignLeft="@+id/lcdScreen"
         android:layout_marginLeft="10dp"
         android:text="ZERO"
-        android:textSize="20px" />
+        android:textSize="30dp" />
 
     <TextView
         android:id="@+id/labelCal"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_alignBottom="@+id/lcdScreen"
-		android:layout_marginBottom="25dp"
+		android:layout_marginBottom="20dp"
 		android:layout_centerHorizontal="true"
         android:text="CAL"
-        android:textSize="120px" />
+        android:textSize="200dp" />
     
-    <TextView
+     <TextView
         android:id="@+id/labelNo"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_alignBottom="@+id/lcdScreen"
-        android:layout_marginBottom="25dp"
+        android:layout_marginBottom="20dp"
         android:layout_centerHorizontal="true"
         android:text="no"
-        android:textSize="120px" />
+        android:textSize="200dp" />
     
       <TextView
         android:id="@+id/labelDone"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_alignBottom="@+id/lcdScreen"
-		android:layout_marginBottom="25dp"
+		android:layout_marginBottom="50dp"
 		android:layout_centerHorizontal="true"
         android:text="DONE"
-        android:textSize="120px" />
+        android:textSize="150dp" />
       
-        <TextView
+      <TextView
         android:id="@+id/labelOL"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_alignBottom="@+id/lcdScreen"
-		android:layout_marginBottom="25dp"
+		android:layout_marginBottom="20dp"
 		android:layout_centerHorizontal="true"
         android:text="OL"
-        android:textSize="120px" />
+        android:textSize="200dp" />
 
     <ImageView
         android:id="@+id/arrowLeft"
@@ -385,10 +327,7 @@
         android:layout_alignBottom="@+id/lcdScreen"
         android:layout_alignLeft="@+id/lcdScreen"
         android:layout_marginBottom="5dp"
-        android:layout_marginLeft="58dp"
-        android:adjustViewBounds="true"  
-	    android:maxWidth="20dp"    
-	    android:scaleType="fitCenter"
+        android:layout_marginLeft="95dp"
         android:src="@drawable/arrow" />
 
     <ImageView
@@ -398,10 +337,7 @@
         android:layout_alignBottom="@+id/lcdScreen"
         android:layout_alignRight="@+id/lcdScreen"
         android:layout_marginBottom="5dp"
-        android:layout_marginRight="58dp"
-        android:adjustViewBounds="true"  
-	    android:maxWidth="20dp"    
-	    android:scaleType="fitCenter"
+        android:layout_marginRight="90dp"
         android:src="@drawable/arrow" />
 
 </RelativeLayout>

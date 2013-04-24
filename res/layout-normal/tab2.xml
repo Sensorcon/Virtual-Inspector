@@ -7,16 +7,19 @@
     android:gravity="center">
      <TextView
         android:id="@+id/tab2_text"
-        android:layout_width="509dp"
+        android:layout_width="250dp"
         android:layout_height="wrap_content"
         android:layout_alignTop="@+id/imageView1"
         android:layout_marginBottom="50dp"
         android:text="@string/tab2_string"
-        android:textSize="25dp" />
+        android:textSize="15dp" />
 
     <ImageView
         android:id="@+id/imageView1"
          android:layout_width="wrap_content"
         android:layout_height="wrap_content"
+        android:adjustViewBounds="true"  
+	    android:maxWidth="120dp"    
+	    android:scaleType="fitCenter"
         android:src="@drawable/inst_left_button" />
 </LinearLayout>

@@ -8,16 +8,19 @@
     
      <TextView
         android:id="@+id/tab5_text"
-        android:layout_width="509dp"
+        android:layout_width="250dp"
         android:layout_height="wrap_content"
         android:layout_alignTop="@+id/imageView1"
         android:layout_marginBottom="100dp"
         android:text="@string/tab5_string"
-        android:textSize="25dp" />
+        android:textSize="15dp" />
 
     <ImageView
         android:id="@+id/imageView1"
          android:layout_width="wrap_content"
         android:layout_height="wrap_content"
+        android:adjustViewBounds="true"  
+	    android:maxWidth="120dp"    
+	    android:scaleType="fitCenter"
         android:src="@drawable/inst_left_button" />
 </LinearLayout>

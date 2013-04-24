@@ -218,7 +218,7 @@ public class MainActivity extends Activity {
 		labelDone.setTypeface(lcdFont);
 		labelOL.setTypeface(lcdFont);
 
-		// Make certain view invisible 
+		// Make certain views invisible 
 		leftButtonPressed.setVisibility(View.GONE);
 		rightButtonPressed.setVisibility(View.GONE);
 		arrowLeft.setVisibility(View.GONE);
@@ -291,10 +291,12 @@ public class MainActivity extends Activity {
 		blStream.initFile(this);
 		offset = blStream.readOffset();
 		
+		// Check for offset
 		if(offset == -1) {
 			offset = 0;
 		}
 		
+		// Check user preferences
 		pStream = new PreferencesStream();
 		pStream.initFile(this);
 		String[] preferences = new String[1];
@@ -304,8 +306,8 @@ public class MainActivity extends Activity {
 			showIntro = false;
 		}
 		
-		Log.d(TAG, "Offset " + Integer.toString(offset));
-		Log.d(TAG, preferences[0]);
+//		Log.d(TAG, "Offset " + Integer.toString(offset));
+//		Log.d(TAG, preferences[0]);
 		
 		// Initialize timing variables
 		countdown = 6;
@@ -361,11 +363,12 @@ public class MainActivity extends Activity {
 			}
 		});
 		
-		int layout = this.getResources().getConfiguration().screenLayout &  Configuration.SCREENLAYOUT_SIZE_MASK;
-		//Log.d(TAG, "Layout: " + Integer.toString(layout));
-		
-		String tag = (String)findViewById(R.id.my_activity_view).getTag();
-		//Log.d(TAG, "Tag: " + tag);
+		// Layout debug
+//		int layout = this.getResources().getConfiguration().screenLayout &  Configuration.SCREENLAYOUT_SIZE_MASK;
+//		//Log.d(TAG, "Layout: " + Integer.toString(layout));
+//		
+//		String tag = (String)findViewById(R.id.my_activity_view).getTag();
+//		//Log.d(TAG, "Tag: " + tag);
 		
 		// Initialize drone variables
 		myDrone = new Drone();
@@ -508,6 +511,7 @@ public class MainActivity extends Activity {
 		btHoldActivated = false;
 		btCountHandler.removeCallbacksAndMessages(null);
 		
+		// Reset power down variables
 		powerDownCount = 5;
 		powerDownHandler.removeCallbacksAndMessages(null);
 		
@@ -630,6 +634,9 @@ public class MainActivity extends Activity {
 	 *************************************************************************************************
 	 *************************************************************************************************/
 	
+	/**
+	 * Loads the dialog shown at startup
+	 */
 	public void showIntroDialog() {
 
 		AlertDialog.Builder alert = new AlertDialog.Builder(this);
@@ -647,6 +654,9 @@ public class MainActivity extends Activity {
 		     }).show();
 	}
 	
+	/**
+	 * Shows the dialog when user attempts to reset the baseline
+	 */
 	public void showResetBaselineDialog() {
 
 		AlertDialog.Builder alert = new AlertDialog.Builder(this);
@@ -662,6 +672,9 @@ public class MainActivity extends Activity {
 		     }).show();
 	}
 	
+	/**
+	 * Shows the dialog when user tries to erase all saved preferences
+	 */
 	public void showFactoryResetDialog() {
 
 		AlertDialog.Builder alert = new AlertDialog.Builder(this);
@@ -677,12 +690,18 @@ public class MainActivity extends Activity {
 		     }).show();
 	}
 	
+	/**
+	 * Resets baseline variables
+	 */
 	public void resetBaseline() {
 		offset = 0;
 		blStream.reset();
 		blStream.initFile(this);
 	}
 	
+	/**
+	 * Resets all user saved variables
+	 */
 	public void factoryReset() {
 		offset = 0;
 		blStream.reset();
@@ -691,12 +710,18 @@ public class MainActivity extends Activity {
 		pStream.reset();
 	}
 	
+	/**
+	 * Displays concentration value on virtual LCD
+	 * 
+	 * @param val	Value in PPM
+	 */
 	public void setDisplayValue(int val) {
 		int d0 = 0;
 		int d1 = 0;
 		int d2 = 0;
 		int d3 = 0;
 		
+		// Check the number of places, and adjust LCD characters accordingly
 		if((val > 9) && (val < 100)) {
 			d1 = val/10;
 			d0 = val % 10;
@@ -990,6 +1015,9 @@ public class MainActivity extends Activity {
 		baselineCalcHandler.post(baselineCalcRunnable);
 	}
 	
+	/**
+	 * Stops calibration and shows "NO CAL"
+	 */
 	public void cancelCalMode() {
 		Log.d(TAG, "Cancel cal mode");
 		
@@ -997,6 +1025,9 @@ public class MainActivity extends Activity {
 		cancelCalHandler.post(cancelCalRunnable);
 	}
 	
+	/**
+	 * Starts countdown to "power down" the device
+	 */
 	public void powerDownMode() {
 		powerDownHandler.post(powerDownRunnable);
 	}
@@ -1075,6 +1106,9 @@ public class MainActivity extends Activity {
 		countdownValue.setVisibility(View.VISIBLE);
 	}
 	
+	/**
+	 * Sets views and flags for cancel calibration mode
+	 */
 	private void initCancelCalMode() {
 		clearScreenAndFlags();
 		
@@ -1146,6 +1180,8 @@ public class MainActivity extends Activity {
 		public void run() {
 
 			if(ledsActivated) {
+				
+				// Cycle through the four leds
 				switch(count) {
 				case 0:
 					enableLED(0);
@@ -1188,6 +1224,7 @@ public class MainActivity extends Activity {
 					count = 0;
 					cycles++;
 					
+					// Check for alarms, in which case you will adjust timing
 					if(lowAlarmActivated) {
 						ledTiming = LOW_ALARM_TIMING;
 					}
@@ -1198,6 +1235,7 @@ public class MainActivity extends Activity {
 						ledTiming = 125;
 					}
 					
+					// Make audible beep, and show leds on actual Sensordrone
 					if(leftArrowOn == false) {
 						if(lowAlarmActivated || highAlarmActivated) {
 							beep();
@@ -1240,6 +1278,7 @@ public class MainActivity extends Activity {
 				ledHandler.postDelayed(this, ledTiming);
 			}
 			else {
+				// Make sure leds are off if they are not supposed to be activated
 				disableLED(0);
 				disableLED(1);
 				disableLED(2);
@@ -1259,6 +1298,7 @@ public class MainActivity extends Activity {
 			if(inCountdownMode) {
 				countdown--;
 				
+				// When countdown reaches 0, go to baseline mode
 				if(countdown == 0) {
 					countdown = 6;
 					
@@ -1292,11 +1332,13 @@ public class MainActivity extends Activity {
 			if(inBaselineCalcMode) {
 				baselineCount--;
 				
+				// Average for the last 15 seconds of count down
 				if(baselineCount < 15) {
 					blValues[baselineCount] = concentration;
 				}
 				
 				if(baselineCount == 0) {
+					// Show the DONE label
 					clearScreenAndFlags();
 					labelDone.setVisibility(View.VISIBLE);
 					
@@ -1306,8 +1348,9 @@ public class MainActivity extends Activity {
 					}
 					blAverage = blSum/15;
 					
-					Log.d(TAG, "blAverage: " + Integer.toString(blAverage));
+					//Log.d(TAG, "blAverage: " + Integer.toString(blAverage));
 					
+					// Write offset to file
 					blStream.writeOffset(blAverage);
 					offset = blAverage;
 					
@@ -1337,6 +1380,7 @@ public class MainActivity extends Activity {
 			if(inCancelCalMode) {
 				cancelCalCount--;
 				
+				// Show NO CAL
 				if(cancelCalCount == 2) {
 					labelNo.setVisibility(View.VISIBLE);
 				}
@@ -1366,6 +1410,7 @@ public class MainActivity extends Activity {
 		public void run() {
 			if(!inCountdownMode) {
 				if(inBaselineMode) {
+					// Blink the right arrow every half second
 					if(rightArrowOn == false) {
 						arrowRight.setVisibility(View.VISIBLE);
 						rightArrowOn = true;
@@ -1391,13 +1436,13 @@ public class MainActivity extends Activity {
 			if(btHoldActivated) {
 				btCount++;
 				
+				// After three second, scan for Sensordrone
 				if(btCount == 3) {
 					btCount = 0;
 					btHoldActivated = false;
 					scan();
 				}
-				else {
-					
+				else {				
 					btCountHandler.postDelayed(this, 1000);
 				}
 			}
@@ -1420,6 +1465,7 @@ public class MainActivity extends Activity {
 			if(inPowerDownMode) {
 				powerDownCount--;
 				
+				// If countdown reaches 0, "power down" the device
 				if(powerDownCount == 0) {
 					powerDownCount = 5;
 					inPowerDownMode = false;
@@ -1431,9 +1477,11 @@ public class MainActivity extends Activity {
 				}
 			}
 			else {
+				// Start countdown when left button is pressed
 				if(leftPressed && !inPowerDownMode) {
 					powerDownCount--;
 						
+					// After one second, actually show the countdown
 					if(powerDownCount == 3) {
 						//Log.d(TAG, "reached power mode");
 						initPowerDownMode();
@@ -1459,8 +1507,10 @@ public class MainActivity extends Activity {
 			
 			if(inNormalMode && poweredOn) {
 				
+				// Check for low alarm
 				if((concentration >= LOW_ALARM_THRESHOLD) && (concentration < HIGH_ALARM_THRESHOLD)  ) {
 					
+					// Initialize alarm 
 					if(lowAlarmActivated == false) {
 						lowAlarmActivated = true;
 						highAlarmActivated = false;
@@ -1475,7 +1525,10 @@ public class MainActivity extends Activity {
 						}
 					}
 				}
+				// Check for high alarm
 				else if(concentration >= HIGH_ALARM_THRESHOLD) {
+					
+					// Initialize alarm
 					if(highAlarmActivated == false) {
 						lowAlarmActivated = false;
 						highAlarmActivated = true;
@@ -1491,6 +1544,7 @@ public class MainActivity extends Activity {
 					}
 				}
 				else {
+					// Disable alarm if concentration goes below low alarm level
 					if(inAlarmMode == true) {
 						ledsActivated = false;
 						lowAlarmActivated = false;
@@ -1532,6 +1586,7 @@ public class MainActivity extends Activity {
 		}
 	};
 	
+	// NOTE: THIS WILL BE IMPLEMENTED IN SEPARATE FILE IN FUTURE UPDATE
 //	public Runnable calculateAverageRunnable = new Runnable() {
 //
 //		@Override

@@ -8,20 +8,16 @@
     
      <TextView
         android:id="@+id/tab4_text"
-        android:layout_width="250dp"
+        android:layout_width="509dp"
         android:layout_height="wrap_content"
-        android:layout_above="@+id/imageView1"
-        android:layout_marginBottom="25dp"
+        android:layout_alignTop="@+id/imageView1"
+        android:layout_marginBottom="50dp"
         android:text="@string/tab4_string"
-        android:textSize="12dp" />
+        android:textSize="20dp" />
 
     <ImageView
         android:id="@+id/imageView1"
          android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:adjustViewBounds="true"  
-        android:layout_marginBottom="5dp"
-	    android:maxWidth="120dp"    
-	    android:scaleType="fitCenter"
         android:src="@drawable/inst_both_button" />
 </LinearLayout>
