@@ -259,7 +259,7 @@
         android:layout_alignBottom="@+id/lcdScreen"
         android:layout_alignRight="@+id/lcdScreen"
         android:layout_marginBottom="25dp"
-        android:layout_marginRight="40dp"
+        android:layout_marginRight="60dp"
         android:text="0"
         android:textSize="120px" />
     
@@ -281,7 +281,7 @@
         android:layout_alignBottom="@+id/lcdScreen"
         android:layout_alignRight="@+id/lcdScreen"
         android:layout_marginBottom="25dp"
-        android:layout_marginRight="160dp"
+        android:layout_marginRight="140dp"
         android:text="0"
         android:textSize="120px" />
 
@@ -292,7 +292,7 @@
         android:layout_alignBottom="@+id/lcdScreen"
         android:layout_alignRight="@+id/lcdScreen"
         android:layout_marginBottom="25dp"
-        android:layout_marginRight="220dp"
+        android:layout_marginRight="180dp"
         android:text="0"
         android:textSize="120px" />
 

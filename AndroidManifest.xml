@@ -36,6 +36,9 @@
         <activity
             android:name="com.sensorcon.virtualinspector.InstructionsActivity"
             android:label="Instructions" />
+    <activity
+            android:name="com.sensorcon.virtualinspector.InstructionsActivityOld"
+            android:label="Instructions" />
     </application>
 
 </manifest>

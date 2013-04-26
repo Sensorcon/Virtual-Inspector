@@ -139,6 +139,7 @@ public class MainActivity extends Activity {
 	public boolean showMax;
 	public boolean showIntro;
 	private String previousMode;
+	private String API_LEVEL = "NEW";
 	/*
 	 * Timing variables
 	 */
@@ -179,6 +180,14 @@ public class MainActivity extends Activity {
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.activity_main);
+		
+		// Check to see if API supports swipe views and fragments
+		if (android.os.Build.VERSION.SDK_INT < 13) {
+		    API_LEVEL = "OLD";
+		} 
+		
+		//DEBUG
+		//API_LEVEL = "OLD";
 		
 		// Initialize views
 		ledTopLeft_on = (ImageView)findViewById(R.id.ledTopLeft_on);
@@ -407,6 +416,9 @@ public class MainActivity extends Activity {
 	public boolean onCreateOptionsMenu(Menu menu) {
 		// Inflate the menu; this adds items to the action bar if it is present.
 		getMenuInflater().inflate(R.menu.main, menu);
+		if(API_LEVEL == "NEW") {
+			menu.removeItem(R.id.calibrate);
+		}
 		
 		return true;
 	}
@@ -418,11 +430,25 @@ public class MainActivity extends Activity {
 			showResetBaselineDialog();
 			break;
 		case R.id.instructions:
-			Intent myIntent = new Intent(getApplicationContext(), InstructionsActivity.class);
-			startActivity(myIntent);
+			if(API_LEVEL == "NEW") {
+				Intent myIntent = new Intent(getApplicationContext(), InstructionsActivity.class);
+				startActivity(myIntent);
+			}
+			else {
+				Intent myIntent = new Intent(getApplicationContext(), InstructionsActivityOld.class);
+				startActivity(myIntent);
+			}
 			break;
 		case R.id.factoryReset:
 			showFactoryResetDialog();
+			break;
+		case R.id.calibrate:
+			if(poweredOn) {
+				baselineMode();
+			}
+			else {
+				quickMessage("Please connect to Sensordrone first");
+			}
 			break;
 		}
 			
@@ -1437,7 +1463,7 @@ public class MainActivity extends Activity {
 				btCount++;
 				
 				// After three second, scan for Sensordrone
-				if(btCount == 3) {
+				if(btCount == 2) {
 					btCount = 0;
 					btHoldActivated = false;
 					scan();
