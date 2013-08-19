@@ -1,38 +1,18 @@
 package com.sensorcon.virtualinspector;
 
-import java.util.EventObject;
-
-import com.sensorcon.sdhelper.ConnectionBlinker;
-import com.sensorcon.sdhelper.SDHelper;
-import com.sensorcon.sdhelper.SDStreamer;
-import com.sensorcon.sensordrone.Drone;
-import com.sensorcon.sensordrone.Drone.DroneEventListener;
-import com.sensorcon.sensordrone.Drone.DroneStatusListener;
-
-import android.support.v4.app.FragmentActivity;
-import android.support.v4.app.FragmentManager;
-
-import android.view.WindowManager;
+import android.annotation.SuppressLint;
+import android.app.Activity;
+import android.app.AlertDialog;
+import android.content.Context;
+import android.content.DialogInterface;
+import android.content.Intent;
+import android.graphics.Typeface;
 import android.media.AudioManager;
 import android.media.SoundPool;
 import android.media.SoundPool.OnLoadCompleteListener;
 import android.os.Bundle;
 import android.os.Handler;
-import android.annotation.SuppressLint;
-import android.app.Activity;
-import android.app.AlertDialog;
-import android.app.Dialog;
-import android.content.Context;
-import android.content.DialogInterface;
-import android.content.Intent;
-import android.content.res.Configuration;
-import android.graphics.Bitmap;
-import android.graphics.Rect;
-import android.graphics.Typeface;
-import android.support.v4.app.DialogFragment;
-import android.text.Html;
 import android.util.Log;
-import android.view.Display;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.MotionEvent;
@@ -42,15 +22,21 @@ import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
+import com.sensorcon.sensordrone.DroneEventHandler;
+import com.sensorcon.sensordrone.DroneEventListener;
+import com.sensorcon.sensordrone.DroneEventObject;
+import com.sensorcon.sensordrone.DroneStatusListener;
+import com.sensorcon.sensordrone.android.Drone;
+import com.sensorcon.sensordrone.android.tools.DroneConnectionHelper;
+import com.sensorcon.sensordrone.android.tools.DroneQSStreamer;
 
 /**
  * Main class for the Sensorcon Inspector. This app emulates an actual carbon monoxide detector sold
  * by Sensorcon, Inc.
  * 
- * Build using SDAndroidLib 1.1.1
+ * Build using SDAndroidLib 1.2.0
  * 
  * @author Sensorcon, Inc.
- * @version 1.0.0
  */
 @SuppressLint("NewApi")
 public class MainActivity extends Activity {
@@ -94,7 +80,6 @@ public class MainActivity extends Activity {
 	 * Runs the sensordrone functions
 	 */
 	protected Drone myDrone;
-	public Storage box;
 	private Handler ledHandler = new Handler();
 	private Handler countdownHandler = new Handler();
 	private Handler baselineCalcHandler = new Handler();
@@ -106,7 +91,7 @@ public class MainActivity extends Activity {
 	/*
 	 * Contains functions to simplify connectivity
 	 */
-	public SDHelper myHelper;
+	public DroneConnectionHelper myHelper;
 	/*
 	 * LED sequence variables
 	 */
@@ -149,7 +134,7 @@ public class MainActivity extends Activity {
 	private int baselineCount;
 	private int cancelCalCount;
 	/*
-	 * Accessable view variables from GUI
+	 * Accessible view variables from GUI
 	 */
 	public ImageView ledTopLeft_on;
 	public ImageView ledTopRight_on;
@@ -176,6 +161,27 @@ public class MainActivity extends Activity {
 	private ImageView arrowRight;
 	private TextView labelDone;
 
+    // Stuff that was previously in the Storage class
+
+    // Holds the sensor of interest - the CO precision sensor
+    public int sensor;
+
+    // Our Listeners
+    public DroneEventHandler droneHandler;
+
+    public DroneEventListener droneEventListener;
+    public DroneStatusListener droneStatusListener;
+    public String MAC = "";
+
+    // GUI variables
+    public TextView statusView;
+    public TextView tvConnectionStatus;
+    public TextView tvConnectInfo;
+
+    // Streams data from sensor
+    public DroneQSStreamer streamer;
+
+
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
@@ -188,7 +194,8 @@ public class MainActivity extends Activity {
 		
 		//DEBUG
 		//API_LEVEL = "OLD";
-		
+
+
 		// Initialize views
 		ledTopLeft_on = (ImageView)findViewById(R.id.ledTopLeft_on);
 		ledTopRight_on = (ImageView)findViewById(R.id.ledTopRight_on);
@@ -214,8 +221,9 @@ public class MainActivity extends Activity {
 		labelCal = (TextView)findViewById(R.id.labelCal);
 		labelNo = (TextView)findViewById(R.id.labelNo);
 		labelDone = (TextView)findViewById(R.id.labelDone);
-		
-		// Set LED font
+
+
+        // Set LED font
 		lcdFont = Typeface.createFromAsset(this.getAssets(), "DS-DIGI.TTF");	
 		ppmValue0.setTypeface(lcdFont);
 		ppmValue1.setTypeface(lcdFont);	
@@ -304,8 +312,9 @@ public class MainActivity extends Activity {
 		if(offset == -1) {
 			offset = 0;
 		}
-		
-		// Check user preferences
+
+
+        // Check user preferences
 		pStream = new PreferencesStream();
 		pStream.initFile(this);
 		String[] preferences = new String[1];
@@ -378,14 +387,60 @@ public class MainActivity extends Activity {
 //		
 //		String tag = (String)findViewById(R.id.my_activity_view).getTag();
 //		//Log.d(TAG, "Tag: " + tag);
-		
-		// Initialize drone variables
+
+
+        // Initialize drone variables
 		myDrone = new Drone();
-		box = new Storage(this);
-		myHelper = new SDHelper();
+		myHelper = new DroneConnectionHelper();
 		
 		// LED startup sequence
 		startupLEDSequence();
+
+
+        // Set up stuff that was in Storage
+
+        // Initialize sensor
+        sensor = myDrone.QS_TYPE_PRECISION_GAS;
+
+        streamer = new DroneQSStreamer(myDrone, sensor);
+
+        droneHandler = new DroneEventHandler() {
+            @Override
+            public void parseEvent(DroneEventObject droneEventObject) {
+
+                if (droneEventObject.matches(DroneEventObject.droneEventType.CONNECTED)) {
+                    quickMessage("Connected!");
+
+                    poweredOn = true;
+                    normalMode();
+
+                    myDrone.quickEnable(sensor);
+                    streamer.enable();
+
+                    myDrone.setLEDs(0,126,0);
+
+                } else if (droneEventObject.matches(DroneEventObject.droneEventType.DISCONNECTED)) {
+                    powerDown();
+                } else if (droneEventObject.matches(DroneEventObject.droneEventType.PRECISION_GAS_MEASURED)) {
+                    if(inNormalMode && poweredOn) {
+                        concentration = (int)myDrone.precisionGas_ppmCarbonMonoxide - offset;
+
+                        if(concentration < 0) {
+                            concentration = 0;
+                        }
+                    }
+
+                    streamer.streamHandler.postDelayed(streamer, 100);
+                } else if (droneEventObject.matches(DroneEventObject.droneEventType.PRECISION_GAS_ENABLED)) {
+                    streamer.run();
+                }
+
+            } // parseEvent
+        };
+
+        // Register the listener
+        myDrone.registerDroneListener(droneHandler);
+
 	}
 
 	
@@ -404,8 +459,7 @@ public class MainActivity extends Activity {
 				e.printStackTrace();
 			}
 			// Unregister the listener
-			myDrone.unregisterDroneEventListener(box.droneEventListener);
-			myDrone.unregisterDroneStatusListener(box.droneStatusListener);
+            myDrone.unregisterDroneListener(droneHandler);
 
 		} else { 
 			//It's an orientation change.
@@ -455,21 +509,7 @@ public class MainActivity extends Activity {
 		return true;
 	}
 	
-	/*
-	 * We use this so we can restore our data. Note that this has been deprecated as of 
-	 * Android API 13. The official Android Developer's recommendation is 
-	 * if you are targeting HONEYCOMB or later, consider instead using a 
-	 * Fragment with Fragment.setRetainInstance(boolean)
-	 * (Also available via the android-support libraries for older versions)
-	 */
-	@Override
-	public Storage onRetainNonConfigurationInstance() {
-		
-		// Make a new Storage object from our old data
-		Storage bin = box;
-		// Return our old data
-		return bin;
-	}
+
 	
 	/*************************************************************************************************
 	 *************************************************************************************************
@@ -816,7 +856,7 @@ public class MainActivity extends Activity {
 	 * Scans for nearby sensordrones and brings up list
 	 */
 	public void scan() {
-		myHelper.scanToConnect(myDrone, MainActivity.this , this, false);
+		myHelper.scanToConnect(myDrone, MainActivity.this, this, false);
 	}
 	
 	/**
@@ -827,22 +867,21 @@ public class MainActivity extends Activity {
 		// Shut off any sensors that are on
 		this.runOnUiThread(new Runnable() {
 
-			@Override
-			public void run() {
-				// Turn off myBlinker
-				box.myBlinker.disable();
-				
-				// Make sure the LEDs go off
-				if (myDrone.isConnected) {
-					myDrone.setLEDs(0, 0, 0);
-				}
-				
-				// Only try and disconnect if already connected
-				if (myDrone.isConnected) {
-					myDrone.disconnect();
-				}
-			}
-		});
+            @Override
+            public void run() {
+
+
+                // Make sure the LEDs go off
+                if (myDrone.isConnected) {
+                    myDrone.setLEDs(0, 0, 0);
+                }
+
+                // Only try and disconnect if already connected
+                if (myDrone.isConnected) {
+                    myDrone.disconnect();
+                }
+            }
+        });
 	}
 		
 	/**
@@ -856,11 +895,11 @@ public class MainActivity extends Activity {
 	public void quickMessage(final String msg) {
 		this.runOnUiThread(new Runnable() {
 
-			@Override
-			public void run() {
-				Toast.makeText(getApplicationContext(), msg, Toast.LENGTH_SHORT).show();
-			}
-		});
+            @Override
+            public void run() {
+                Toast.makeText(getApplicationContext(), msg, Toast.LENGTH_SHORT).show();
+            }
+        });
 	}
 	
 	/*************************************************************************************************
@@ -1144,9 +1183,8 @@ public class MainActivity extends Activity {
 	
 	/**
 	 * Clears all views and flags
-	 * 
-	 * @param rememberLastMode	If this is set to true, it will not clear the normal and baseline mode flags
-	 */
+	 *
+     */
 	private void clearScreenAndFlags() {
 		ppmValue0.setVisibility(View.GONE);
 		ppmValue1.setVisibility(View.GONE);
@@ -1265,7 +1303,7 @@ public class MainActivity extends Activity {
 					if(leftArrowOn == false) {
 						if(lowAlarmActivated || highAlarmActivated) {
 							beep();
-							myHelper.flashLEDs(myDrone, 2, 125, 255, 0, 0);
+                            myDrone.setLEDs(126,0,0);
 						}
 					}
 				}
@@ -1542,8 +1580,7 @@ public class MainActivity extends Activity {
 						highAlarmActivated = false;
 						ledsActivated = true;
 
-						// Leds on drone
-						box.myBlinker.disable();
+
 					
 						if(inAlarmMode == false) {
 							displayConcentrationHandler.post(LEDRunnable);
@@ -1560,8 +1597,7 @@ public class MainActivity extends Activity {
 						highAlarmActivated = true;
 						ledsActivated = true;
 						
-						// Leds on drone
-						box.myBlinker.disable();
+
 				
 						if(inAlarmMode == false) {
 							displayConcentrationHandler.post(LEDRunnable);
@@ -1585,9 +1621,9 @@ public class MainActivity extends Activity {
 						ledBottomLeft_on.setVisibility(View.GONE);
 						ledBottomRight_on.setVisibility(View.GONE);
 						
-						// Leds on drone
-						box.myBlinker.enable();
-						box.myBlinker.run();
+
+                        // All clear
+                        myDrone.setLEDs(0,126,0);
 					}
 				}
 				
@@ -1612,238 +1648,7 @@ public class MainActivity extends Activity {
 		}
 	};
 	
-	// NOTE: THIS WILL BE IMPLEMENTED IN SEPARATE FILE IN FUTURE UPDATE
-//	public Runnable calculateAverageRunnable = new Runnable() {
-//
-//		@Override
-//		public void run() {
-//			
-//			if(inNormalMode && poweredOn && !inCountdownMode) {
-//				
-//				values[numMeasurements] = concentration;
-//				numMeasurements++;
-//				
-//				if(numMeasurements == MAX_MEASUREMENTS) {
-//					numMeasurements = 0;
-//				}
-//				
-//				sum = 0;
-//				for(int i = 0; i < MAX_MEASUREMENTS; i++) {
-//					sum += values[i];
-//				}
-//				
-//				average = sum/MAX_MEASUREMENTS - offset;
-//				
-//				if((average >= LOW_ALARM_THRESHOLD) && (average < HIGH_ALARM_THRESHOLD)  ) {
-//					if(lowAlarmActivated == false) {
-//						lowAlarmActivated = true;
-//						highAlarmActivated = false;
-//						ledsActivated = true;
-//						myHandler.post(LEDRunnable);
-//					}
-//				}
-//				else if(average >= HIGH_ALARM_THRESHOLD) {
-//					if(highAlarmActivated == false) {
-//						lowAlarmActivated = false;
-//						highAlarmActivated = true;
-//						ledsActivated = true;
-//						myHandler.post(LEDRunnable);
-//					}
-//				}
-//				else {
-//					ledsActivated = false;
-//					lowAlarmActivated = false;
-//					highAlarmActivated = false;
-//				}
-//				
-//				if(average < 0) {
-//					average = 0;
-//				}
-//			}
-//				
-//			myHandler.postDelayed(this, 125);
-//		}
-//	};
+
 	
-	/*
-	 * Because Android will destroy and re-create things on events like orientation changes,
-	 * we will need a way to store our objects and return them in such a case. 
-	 * 
-	 * A simple and straightforward way to do this is to create a class which has all of the objects
-	 * and values we want don't want to get lost. When our orientation changes, it will reload our
-	 * class, and everything will behave as normal! See onRetainNonConfigurationInstance in the code
-	 * below for more information.
-	 * 
-	 * A lot of the GUI set up will be here, and initialized via the Constructor
-	 */
-	public final class Storage {
-		
-		// A ConnectionBLinker from the SDHelper Library
-		public ConnectionBlinker myBlinker;
-		
-		// Holds the sensor of interest - the CO precision sensor
-		public int sensor;
-		
-		// Our Listeners
-		public DroneEventListener droneEventListener;
-		public DroneStatusListener droneStatusListener;
-		public String MAC = "";
-		
-		// GUI variables
-		public TextView statusView;
-		public TextView tvConnectionStatus;
-		public TextView tvConnectInfo;
-		
-		// Streams data from sensor
-		public SDStreamer streamer;
-		
-		public Storage(Context context) {
-			
-			// Initialize sensor
-			sensor = myDrone.QS_TYPE_PRECISION_GAS;
-			
-			// This will Blink our Drone, once a second, Blue
-			myBlinker = new ConnectionBlinker(myDrone, 1000, 0, 255, 0);
-			
-			streamer = new SDStreamer(myDrone, sensor);
-			
-			/*
-			 * Let's set up our Drone Event Listener.
-			 * 
-			 * See adcMeasured for the general flow for when a sensor is measured.
-			 * 
-			 */
-			droneEventListener = new DroneEventListener() {
-				
-				@Override
-				public void connectEvent(EventObject arg0) {
 
-					quickMessage("Connected!");
-					
-					poweredOn = true;
-					normalMode();
-					
-					streamer.enable();
-					myDrone.quickEnable(sensor);
-					
-					// Flash teh LEDs green
-					myHelper.flashLEDs(myDrone, 3, 100, 0, 0, 22);
-					// Turn on our blinker
-					myBlinker.enable();
-					myBlinker.run();
-				}
-
-				
-				@Override
-				public void connectionLostEvent(EventObject arg0) {
-					// Turn off the blinker
-					myBlinker.disable();
-				}
-
-				@Override
-				public void disconnectEvent(EventObject arg0) {
-					// If drone is disconnected, "power down" the inspector
-					powerDown();
-				}
-
-				@Override
-				public void precisionGasMeasured(EventObject arg0) {
-					if(inNormalMode && poweredOn) {
-						concentration = (int)myDrone.precisionGas_ppmCarbonMonoxide - offset;
-						
-						if(concentration < 0) {
-							concentration = 0;
-						}
-					}
-					
-					streamer.streamHandler.postDelayed(streamer, 100);
-				}
-
-				/*
-				 * Unused events
-				 */
-				@Override
-				public void customEvent(EventObject arg0) {}
-				@Override
-				public void adcMeasured(EventObject arg0) {}
-				@Override
-				public void altitudeMeasured(EventObject arg0) {}
-				@Override
-				public void capacitanceMeasured(EventObject arg0) {}
-				@Override
-				public void humidityMeasured(EventObject arg0) {}
-				@Override
-				public void i2cRead(EventObject arg0) {}
-				@Override
-				public void irTemperatureMeasured(EventObject arg0) {}
-				@Override
-				public void oxidizingGasMeasured(EventObject arg0) {}
-				@Override
-				public void pressureMeasured(EventObject arg0) {}
-				@Override
-				public void reducingGasMeasured(EventObject arg0) {}
-				@Override
-				public void rgbcMeasured(EventObject arg0) {}
-				@Override
-				public void temperatureMeasured(EventObject arg0) {}
-				@Override
-				public void uartRead(EventObject arg0) {}
-				@Override
-				public void unknown(EventObject arg0) {}
-				@Override
-				public void usbUartRead(EventObject arg0) {}
-			};
-			
-			/*
-			 * Set up our status listener
-			 * 
-			 * see adcStatus for the general flow for sensors.
-			 */
-			droneStatusListener = new DroneStatusListener() {
-
-				@Override
-				public void precisionGasStatus(EventObject arg0) {
-					streamer.run();
-				}
-				
-				/*
-				 * Unused statuses
-				 */
-				@Override
-				public void adcStatus(EventObject arg0) {}
-				@Override
-				public void altitudeStatus(EventObject arg0) {}
-				@Override
-				public void batteryVoltageStatus(EventObject arg0) {}
-				@Override
-				public void capacitanceStatus(EventObject arg0) {}
-				@Override
-				public void chargingStatus(EventObject arg0) {}
-				@Override
-				public void customStatus(EventObject arg0) {}
-				@Override
-				public void humidityStatus(EventObject arg0) {}
-				@Override
-				public void irStatus(EventObject arg0) {}
-				@Override
-				public void lowBatteryStatus(EventObject arg0) {}
-				@Override
-				public void oxidizingGasStatus(EventObject arg0) {}
-				@Override
-				public void pressureStatus(EventObject arg0) {}
-				@Override
-				public void reducingGasStatus(EventObject arg0) {}
-				@Override
-				public void rgbcStatus(EventObject arg0) {}
-				@Override
-				public void temperatureStatus(EventObject arg0) {}
-				@Override
-				public void unknownStatus(EventObject arg0) {}
-			};
-			
-			// Register the listeners
-			myDrone.registerDroneEventListener(droneEventListener);
-			myDrone.registerDroneStatusListener(droneStatusListener);
-		}
-	}
 }
